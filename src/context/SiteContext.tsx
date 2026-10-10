@@ -48,7 +48,7 @@ interface SiteContextType {
   setActiveBibtexPub: (pub: Publication | null) => void;
 }
 
-const STORAGE_KEY = 'hyein_academic_website_data_v1';
+const STORAGE_KEY = 'hyein_academic_website_data_v2';
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
@@ -58,11 +58,20 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Ensure complete structure matches current schema
+        // Ensure complete structure matches current schema and update institution to Monash University
+        const mergedProfile = { ...initialSiteData.profile, ...parsed.profile };
+        if (mergedProfile.institution && mergedProfile.institution.includes('Stanford')) {
+          mergedProfile.institution = 'Monash University';
+          mergedProfile.department = 'Faculty of Information Technology & Monash Data Futures Institute Affiliate';
+          mergedProfile.institutionUrl = 'https://www.monash.edu';
+          mergedProfile.office = 'Woodside Building for Technology & Design, Clayton Campus';
+          mergedProfile.address = 'Wellington Road, Clayton VIC 3800, Melbourne, Australia';
+          mergedProfile.email = 'hyein.cho@monash.edu';
+        }
         return {
           ...initialSiteData,
           ...parsed,
-          profile: { ...initialSiteData.profile, ...parsed.profile },
+          profile: mergedProfile,
           theme: { ...initialSiteData.theme, ...parsed.theme },
           seo: { ...initialSiteData.seo, ...parsed.seo },
         };

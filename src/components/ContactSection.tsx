@@ -69,7 +69,7 @@ export const ContactSection: React.FC = () => {
       const formData = new FormData();
       formData.append('name', 'Test Visitor');
       formData.append('email', 'hyein.ellen.cho@gmail.com');
-      formData.append('affiliation', 'Stanford CollabAI Lab (Browser Test)');
+      formData.append('affiliation', 'Monash CollabAI Lab (Browser Test)');
       formData.append('topic', 'Website Data Verification');
       formData.append('message', 'This is an instant test message from the website contact form to verify that Formspree is receiving inquiries properly.');
       formData.append('_subject', '[CollabAI Lab] Formspree Test from Website');
@@ -163,7 +163,7 @@ export const ContactSection: React.FC = () => {
                 Note for Prospective Ph.D. Applicants:
               </h4>
               <p className="leading-relaxed">
-                Due to email volume, I cannot pre-evaluate individual CVs outside the formal admissions committee. If you are applying, please designate <em>Hyein Ellen Cho</em> on your official Stanford CS application.
+                Due to email volume, I cannot pre-evaluate individual CVs outside the formal admissions committee. If you are applying, please designate <em>Hyein Ellen Cho</em> on your official Monash University research degree application.
               </p>
             </div>
           </div>

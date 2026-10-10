@@ -1176,7 +1176,7 @@ export const AdminDashboardModal: React.FC = () => {
                 </h4>
                 <div className="p-4 bg-white border border-neutral-200 rounded-md font-sans max-w-xl shadow-xs">
                   <div className="text-[11px] text-neutral-600 flex items-center gap-1.5 mb-0.5">
-                    <span className="text-neutral-800 font-medium">stanford.edu</span>
+                    <span className="text-neutral-800 font-medium">monash.edu</span>
                     <span className="text-neutral-400">› hyeincho</span>
                   </div>
                   <div className="text-base text-blue-800 hover:underline cursor-pointer font-medium leading-snug">

@@ -187,7 +187,7 @@ export const ProjectsLabSection: React.FC = () => {
                 Prospective Ph.D. Applicants & Postdoctoral Fellows
               </h4>
               <p className="text-xs md:text-sm font-dm text-neutral-300 leading-relaxed">
-                I am actively considering applications for Fall 2027 doctoral admissions via the Stanford Computer Science Department. Please mention my name in your statement of purpose and review our recent CHI/UIST publications before reaching out.
+                I am actively considering applications for Fall 2027 doctoral research candidates via the Monash University Faculty of Information Technology. Please mention my name in your research proposal and review our recent CHI/UIST publications before reaching out.
               </p>
             </div>
             <a

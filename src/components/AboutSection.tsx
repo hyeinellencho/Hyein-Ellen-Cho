@@ -46,15 +46,15 @@ export const AboutSection: React.FC = () => {
               <ul className="text-xs font-dm text-neutral-600 space-y-1.5 list-none">
                 <li className="flex items-center gap-2">
                   <span className="text-neutral-400">·</span>
-                  <span>Stanford University Department of Computer Science (Tenured Faculty)</span>
+                  <span>Monash University Faculty of Information Technology (Associate Professor)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-neutral-400">·</span>
-                  <span>Stanford Institute for Human-Centered AI (HAI Faculty Affiliate)</span>
+                  <span>Monash Data Futures Institute (MDFI Research Affiliate)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-neutral-400">·</span>
-                  <span>Stanford Center for Decisional Cognition (Senior Fellow)</span>
+                  <span>Australian Research Council (ARC) Discovery Project Investigator</span>
                 </li>
               </ul>
             </div>

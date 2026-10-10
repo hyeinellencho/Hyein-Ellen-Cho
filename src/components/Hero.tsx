@@ -124,12 +124,13 @@ export const Hero: React.FC = () => {
           <div className="lg:col-span-5 flex flex-col items-center lg:items-end">
             <div className="w-full max-w-sm">
               {/* Portrait Frame */}
-              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-md border border-neutral-200/90 bg-neutral-50 shadow-xs group">
+              <div className="relative w-[301px] h-[300px] max-w-full overflow-hidden rounded-md border border-neutral-200/90 bg-neutral-50 shadow-xs group mx-auto lg:ml-auto">
                 <img
                   src={profile.avatarUrl}
                   alt={`Portrait of ${profile.name}`}
                   referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover grayscale-[15%] group-hover:grayscale-0 transition-all duration-500"
+                  style={{ width: '301px', height: '300px' }}
+                  className="w-[301px] h-[300px] object-cover grayscale-[15%] group-hover:grayscale-0 transition-all duration-500"
                 />
                 {/* Subtle scrim for contrast */}
                 <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
@@ -170,7 +171,7 @@ export const Hero: React.FC = () => {
             <span>{profile.statusBadge}</span>
           </div>
           <div className="flex items-center gap-4 text-neutral-500 shrink-0">
-            <span>Faculty Affiliate: Stanford HAI</span>
+            <span>Faculty Affiliate: Monash Data Futures Institute</span>
             <span aria-hidden="true" className="text-neutral-300">·</span>
             <span>Associate Editor: ACM TOCHI</span>
           </div>

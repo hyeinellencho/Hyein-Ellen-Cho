@@ -58,7 +58,7 @@ export const PostDetailModal: React.FC = () => {
           </div>
 
           <div className="pt-6 border-t border-neutral-200 flex items-center justify-between text-xs font-dm text-neutral-500">
-            <span>Published by CollabAI Lab · Stanford University</span>
+            <span>Published by CollabAI Lab · Monash University</span>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
