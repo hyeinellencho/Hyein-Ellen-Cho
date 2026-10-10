@@ -9,7 +9,7 @@ export const Header: React.FC = () => {
   const navLinks = [
     { label: 'About', href: '#about' },
     { label: 'Publications', href: '#publications' },
-    { label: 'Lab & Team', href: '#lab' },
+    { label: 'Research Projects', href: '#lab' },
     { label: 'Contact', href: '#contact' },
   ];
 
@@ -41,12 +41,12 @@ export const Header: React.FC = () => {
         <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={() => setIsAdminOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-dm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 hover:text-neutral-900 rounded border border-neutral-300/80 transition-colors whitespace-nowrap shrink-0"
-            title="Open Admin Dashboard to manage posts, papers, design & SEO"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-dm font-medium text-neutral-800 bg-neutral-100 hover:bg-neutral-200 hover:text-neutral-900 rounded border border-neutral-300 transition-colors whitespace-nowrap shrink-0 shadow-2xs"
+            title="Directly edit all website content, biography, research, publications & settings"
           >
             <Settings className="w-3.5 h-3.5 text-neutral-600" />
-            <span className="hidden sm:inline">Admin Dashboard</span>
-            <span className="sm:hidden">Admin</span>
+            <span className="hidden sm:inline">Edit Website</span>
+            <span className="sm:hidden">Edit</span>
           </button>
 
           <a
@@ -86,7 +86,7 @@ export const Header: React.FC = () => {
               onClick={() => setMobileMenuOpen(false)}
               className="py-1.5 text-neutral-900 font-semibold"
             >
-              Contact & Inquiries
+              Contact
             </a>
           </nav>
           <div className="pt-2 flex items-center justify-between border-t border-neutral-200 text-xs text-neutral-500">

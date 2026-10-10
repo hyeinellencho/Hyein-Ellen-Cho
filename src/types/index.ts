@@ -1,7 +1,7 @@
 export type FontPairing = 'cormorant' | 'playfair' | 'jakarta';
 export type GrayPalette = 'neutral' | 'slate' | 'zinc' | 'stone';
 export type BorderTone = 'hairline' | 'crisp' | 'none';
-export type AdminTab = 'posts' | 'publications' | 'profile' | 'teaching' | 'lab' | 'theme' | 'seo' | 'backup';
+export type AdminTab = 'posts' | 'publications' | 'profile' | 'research' | 'teaching' | 'lab' | 'theme' | 'seo' | 'backup';
 
 export interface Profile {
   name: string;
@@ -12,7 +12,7 @@ export interface Profile {
   institution: string;
   institutionUrl: string;
   office: string;
-  officeHours: string;
+  officeHours?: string;
   email: string;
   phone: string;
   address: string;
@@ -22,6 +22,9 @@ export interface Profile {
   avatarUrl: string;
   cvUrl?: string;
   formspreeEndpoint?: string;
+  primaryInterests?: string[];
+  affiliations?: string[];
+  prospectiveStudentsNote?: string;
 }
 
 export interface ResearchInterest {
@@ -31,7 +34,7 @@ export interface ResearchInterest {
   keywords: string[];
 }
 
-export type PublicationType = 'conference' | 'journal' | 'workshop' | 'preprint' | 'book_chapter';
+export type PublicationType = 'journal' | 'book_chapter' | 'oped' | 'conference' | 'preprint';
 
 export interface Publication {
   id: string;
@@ -120,12 +123,13 @@ export interface SeoConfig {
   canonicalUrl: string;
   ogImageUrl: string;
   googleScholarId: string;
+  googleScholarUrl: string;
   orcidId: string;
   arxivAuthorId: string;
   githubUrl: string;
   linkedinUrl: string;
   twitterHandle: string;
-  dblpUrl: string;
+  dblpUrl?: string;
 }
 
 export interface ThemeConfig {

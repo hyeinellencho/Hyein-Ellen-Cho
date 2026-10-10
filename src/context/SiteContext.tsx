@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import {
   SiteData,
   Profile,
+  ResearchInterest,
   Publication,
   Course,
   ResearchProject,
@@ -16,6 +17,9 @@ import { initialSiteData } from '../data/initialData';
 interface SiteContextType {
   siteData: SiteData;
   updateProfile: (profile: Partial<Profile>) => void;
+  addResearchInterest: (ri: Omit<ResearchInterest, 'id'>) => void;
+  updateResearchInterest: (id: string, ri: Partial<ResearchInterest>) => void;
+  deleteResearchInterest: (id: string) => void;
   addPost: (post: Omit<Post, 'id'>) => void;
   updatePost: (id: string, post: Partial<Post>) => void;
   deletePost: (id: string) => void;
@@ -48,32 +52,115 @@ interface SiteContextType {
   setActiveBibtexPub: (pub: Publication | null) => void;
 }
 
-const STORAGE_KEY = 'hyein_academic_website_data_v2';
+const STORAGE_KEY = 'hyein_academic_website_data_v7';
+const OBSOLETE_KEYS = [
+  'hyein_academic_website_data_v6',
+  'hyein_academic_website_data_v5',
+  'hyein_academic_website_data_v4',
+  'hyein_academic_website_data_v3',
+  'hyein_academic_website_data_v2',
+  'hyein_academic_website_data_v1',
+];
+
+// Helper to remove obsolete keys and free localStorage quota
+const purgeObsoleteStorageKeys = () => {
+  OBSOLETE_KEYS.forEach((key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // ignore
+    }
+  });
+};
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
 export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [siteData, setSiteData] = useState<SiteData>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved =
+        localStorage.getItem(STORAGE_KEY) ||
+        localStorage.getItem('hyein_academic_website_data_v6') ||
+        localStorage.getItem('hyein_academic_website_data_v3') ||
+        localStorage.getItem('hyein_academic_website_data_v2') ||
+        localStorage.getItem('hyein_academic_website_data_v1');
+
+      // Clean up previous iteration storage slots immediately to prevent quota bloat
+      purgeObsoleteStorageKeys();
+
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Ensure complete structure matches current schema and update institution to Monash University
+        // Ensure complete structure matches current schema and sanitize
         const mergedProfile = { ...initialSiteData.profile, ...parsed.profile };
         if (mergedProfile.institution && mergedProfile.institution.includes('Stanford')) {
           mergedProfile.institution = 'Monash University';
-          mergedProfile.department = 'Faculty of Information Technology & Monash Data Futures Institute Affiliate';
           mergedProfile.institutionUrl = 'https://www.monash.edu';
           mergedProfile.office = 'Woodside Building for Technology & Design, Clayton Campus';
           mergedProfile.address = 'Wellington Road, Clayton VIC 3800, Melbourne, Australia';
           mergedProfile.email = 'hyein.cho@monash.edu';
         }
+        if (
+          !mergedProfile.department ||
+          mergedProfile.department.toLowerCase().includes('information technology')
+        ) {
+          mergedProfile.department = 'Department of Computer Science';
+        }
+        // Remove academic notice ribbon & office hours per user request
+        mergedProfile.statusBadge = '';
+        mergedProfile.officeHours = '';
+
+        if (!mergedProfile.primaryInterests || mergedProfile.primaryInterests.length === 0) {
+          mergedProfile.primaryInterests = initialSiteData.profile.primaryInterests;
+        }
+        if (!mergedProfile.affiliations || mergedProfile.affiliations.length === 0) {
+          mergedProfile.affiliations = initialSiteData.profile.affiliations;
+        }
+        if (mergedProfile.address && mergedProfile.address.includes('Wellington Road')) {
+          mergedProfile.address = '';
+        }
+        if (
+          !mergedProfile.prospectiveStudentsNote ||
+          mergedProfile.prospectiveStudentsNote.includes('Due to email volume')
+        ) {
+          mergedProfile.prospectiveStudentsNote = 'Please note that I am not accepting any research students until 2028.';
+        }
+
+        // If avatarUrl was the old default or oversized data url, ensure safe fallback
+        if (
+          !mergedProfile.avatarUrl ||
+          mergedProfile.avatarUrl.includes('prof_portrait_hyein_1791619836917')
+        ) {
+          mergedProfile.avatarUrl = '/src/assets/images/prof_portrait_new_1791626002011.jpg';
+        }
+
+        const mergedSeo = { ...initialSiteData.seo, ...(parsed.seo || {}) };
+        mergedSeo.googleScholarUrl =
+          'https://scholar.google.com/citations?hl=en&user=laKlDswAAAAJ&view_op=list_works&sortby=pubdate';
+        mergedSeo.googleScholarId = 'laKlDswAAAAJ';
+        mergedSeo.linkedinUrl = 'https://www.linkedin.com/in/hyein-ellen-cho/';
+        mergedSeo.dblpUrl = 'https://www.linkedin.com/in/hyein-ellen-cho/';
+
+        // Migrate publications: sync with authentic Google Scholar publications
+        const hasGoogleScholarData =
+          Array.isArray(parsed.publications) &&
+          parsed.publications.some((p: Publication) => p.id && p.id.startsWith('pub-scholar-'));
+
+        let mergedPublications: Publication[];
+        if (!hasGoogleScholarData) {
+          mergedPublications = initialSiteData.publications;
+        } else {
+          mergedPublications = parsed.publications.filter(
+            (p: Publication) => p.type !== 'conference' && p.type !== 'preprint'
+          );
+        }
+
         return {
           ...initialSiteData,
           ...parsed,
+          publications: mergedPublications,
           profile: mergedProfile,
-          theme: { ...initialSiteData.theme, ...parsed.theme },
-          seo: { ...initialSiteData.seo, ...parsed.seo },
+          theme: { ...initialSiteData.theme, ...(parsed.theme || {}) },
+          seo: mergedSeo,
         };
       }
     } catch (e) {
@@ -88,12 +175,36 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activePost, setActivePost] = useState<Post | null>(null);
   const [activeBibtexPub, setActiveBibtexPub] = useState<Publication | null>(null);
 
-  // Sync to localStorage
+  // Sync to localStorage with robust quota handling and safety fallback
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(siteData));
-    } catch (e) {
-      console.error('Error saving data to localStorage:', e);
+    } catch (error) {
+      console.warn('Initial localStorage save failed, purging old keys & retrying...', error);
+      // Clean up any old unused keys
+      purgeObsoleteStorageKeys();
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(siteData));
+      } catch (secondError) {
+        console.warn('Storage still full. Attempting storage with bundled asset path fallback...', secondError);
+        // If quota still exceeded, it is likely caused by an oversized avatar data URL.
+        // Fall back to saving with the default portrait image path to ensure all textual edits/publications remain saved.
+        try {
+          const lightweightData: SiteData = {
+            ...siteData,
+            profile: {
+              ...siteData.profile,
+              avatarUrl: siteData.profile.avatarUrl.startsWith('data:')
+                ? '/src/assets/images/prof_portrait_new_1791626002011.jpg'
+                : siteData.profile.avatarUrl,
+            },
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(lightweightData));
+        } catch (fatalStorageError) {
+          console.warn('Storage quota fully exhausted by external factors. State retained in memory:', fatalStorageError);
+        }
+      }
     }
   }, [siteData]);
 
@@ -110,6 +221,33 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setSiteData((prev) => ({
       ...prev,
       profile: { ...prev.profile, ...partial },
+    }));
+  };
+
+  const addResearchInterest = (ri: Omit<ResearchInterest, 'id'>) => {
+    const newRI: ResearchInterest = {
+      ...ri,
+      id: `ri-${Date.now()}`,
+    };
+    setSiteData((prev) => ({
+      ...prev,
+      researchInterests: [...prev.researchInterests, newRI],
+    }));
+  };
+
+  const updateResearchInterest = (id: string, partial: Partial<ResearchInterest>) => {
+    setSiteData((prev) => ({
+      ...prev,
+      researchInterests: prev.researchInterests.map((item) =>
+        item.id === id ? { ...item, ...partial } : item
+      ),
+    }));
+  };
+
+  const deleteResearchInterest = (id: string) => {
+    setSiteData((prev) => ({
+      ...prev,
+      researchInterests: prev.researchInterests.filter((item) => item.id !== id),
     }));
   };
 
@@ -280,6 +418,9 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         siteData,
         updateProfile,
+        addResearchInterest,
+        updateResearchInterest,
+        deleteResearchInterest,
         addPost,
         updatePost,
         deletePost,

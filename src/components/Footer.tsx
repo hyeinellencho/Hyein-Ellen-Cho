@@ -22,7 +22,10 @@ export const Footer: React.FC = () => {
               {profile.title} · {profile.department}
             </p>
             <p className="text-neutral-400">
-              {profile.institution} · {profile.address}
+              {profile.institution}
+              {profile.address && !profile.address.includes('Wellington Road')
+                ? ` · ${profile.address}`
+                : ''}
             </p>
           </div>
 
@@ -32,10 +35,10 @@ export const Footer: React.FC = () => {
                 Navigation
               </span>
               <ul className="space-y-1 text-neutral-600">
-                <li><a href="#about" className="hover:text-neutral-900 transition-colors">Biography & Mission</a></li>
+                <li><a href="#about" className="hover:text-neutral-900 transition-colors">Biography</a></li>
                 <li><a href="#publications" className="hover:text-neutral-900 transition-colors">Publications</a></li>
-                <li><a href="#lab" className="hover:text-neutral-900 transition-colors">CollabAI Lab Studio</a></li>
-                <li><a href="#contact" className="hover:text-neutral-900 transition-colors">Contact & Office</a></li>
+                <li><a href="#lab" className="hover:text-neutral-900 transition-colors">Research Projects</a></li>
+                <li><a href="#contact" className="hover:text-neutral-900 transition-colors">Contact</a></li>
               </ul>
             </div>
 
@@ -46,7 +49,7 @@ export const Footer: React.FC = () => {
               <ul className="space-y-1 text-neutral-600">
                 <li>
                   <a
-                    href="https://scholar.google.com"
+                    href={seo.googleScholarUrl || 'https://scholar.google.com/citations?hl=en&user=laKlDswAAAAJ&view_op=list_works&sortby=pubdate'}
                     target="_blank"
                     rel="noreferrer"
                     className="hover:text-neutral-900 transition-colors"
@@ -66,22 +69,12 @@ export const Footer: React.FC = () => {
                 </li>
                 <li>
                   <a
-                    href={seo.dblpUrl}
+                    href={seo.linkedinUrl || 'https://www.linkedin.com/in/hyein-ellen-cho/'}
                     target="_blank"
                     rel="noreferrer"
                     className="hover:text-neutral-900 transition-colors"
                   >
-                    DBLP Archive
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href={seo.githubUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-neutral-900 transition-colors"
-                  >
-                    GitHub Organization
+                    LinkedIn
                   </a>
                 </li>
               </ul>

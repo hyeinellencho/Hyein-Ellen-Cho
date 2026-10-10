@@ -32,16 +32,16 @@ const AcademicAppContent: React.FC = () => {
         {/* Split Hero with Academic Portrait & Notice Ribbon */}
         <Hero />
 
-        {/* 01. Biography & Academic Mission */}
+        {/* Biography */}
         <AboutSection />
 
-        {/* 02. Peer-Reviewed Publications & Preprints */}
+        {/* Publications */}
         <PublicationsSection />
 
-        {/* 03. Research Initiatives & CollabAI Studio */}
+        {/* Research Initiatives */}
         <ProjectsLabSection />
 
-        {/* 04. Contact & Student Inquiry Instructions */}
+        {/* Contact & Academic Enquiries */}
         <ContactSection />
       </main>
 

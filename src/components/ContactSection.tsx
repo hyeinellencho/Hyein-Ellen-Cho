@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { useSite } from '../context/SiteContext';
-import { Mail, MapPin, Clock, Phone, Send, CheckCircle2, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, MapPin, Phone, Send, CheckCircle2, ExternalLink, Loader2, AlertCircle, Edit2 } from 'lucide-react';
 
 export const ContactSection: React.FC = () => {
-  const { siteData } = useSite();
+  const { siteData, setIsAdminOpen, setAdminTab } = useSite();
   const { profile } = siteData;
 
   const [formState, setFormState] = useState({
     name: '',
     email: '',
     affiliation: '',
-    topic: 'Prospective Ph.D. Student',
+    topic: 'Prospective PhD Student',
     message: '',
   });
 
@@ -34,7 +34,7 @@ export const ContactSection: React.FC = () => {
       formData.append('affiliation', formState.affiliation || 'N/A');
       formData.append('topic', formState.topic);
       formData.append('message', formState.message);
-      formData.append('_subject', `[Academic Inquiry - ${formState.topic}] from ${formState.name}`);
+      formData.append('_subject', `[Academic Enquiry - ${formState.topic}] from ${formState.name}`);
       formData.append('_replyto', formState.email);
 
       const response = await fetch(formspreeUrl, {
@@ -52,7 +52,7 @@ export const ContactSection: React.FC = () => {
         if (data && data.errors && data.errors.length > 0) {
           setSubmitError(data.errors.map((err: any) => err.message).join(', '));
         } else {
-          setSubmitError('Failed to dispatch inquiry to Formspree. Please verify your connection.');
+          setSubmitError('Failed to dispatch enquiry to Formspree. Please verify your connection.');
         }
       }
     } catch (err: any) {
@@ -102,14 +102,23 @@ export const ContactSection: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-8 border-b border-neutral-200 mb-12">
           <div>
             <span className="text-xs uppercase tracking-widest font-dm text-neutral-400 block mb-1">
-              Correspondence & Location
+              Contact
             </span>
             <h2 className="text-3xl md:text-4xl font-cormorant font-semibold text-neutral-900 tracking-tight">
-              04. Contact & Academic Inquiries
+              Enquiries
             </h2>
           </div>
-          <div className="text-xs font-dm text-neutral-500 max-w-sm">
-            Please select the inquiry category to route your message to the appropriate calendar or lab queue.
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setAdminTab('profile');
+                setIsAdminOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-dm font-medium text-neutral-700 bg-white hover:bg-neutral-100 border border-neutral-300 rounded transition-colors"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-neutral-500" />
+              <span>Edit Contact Info</span>
+            </button>
           </div>
         </div>
 
@@ -118,7 +127,7 @@ export const ContactSection: React.FC = () => {
           <div className="lg:col-span-5 space-y-6">
             <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-md space-y-4">
               <h3 className="text-sm font-dm font-semibold uppercase tracking-wider text-neutral-900">
-                Office & Mail Address
+                Office & Postal Address
               </h3>
 
               <div className="space-y-3 text-xs md:text-sm font-dm text-neutral-700">
@@ -127,7 +136,9 @@ export const ContactSection: React.FC = () => {
                   <div>
                     <strong className="text-neutral-900 block">{profile.institution}</strong>
                     <span>{profile.office}</span>
-                    <span className="block text-neutral-500">{profile.address}</span>
+                    {profile.address && !profile.address.includes('Wellington Road') && (
+                      <span className="block text-neutral-500">{profile.address}</span>
+                    )}
                   </div>
                 </div>
 
@@ -143,27 +154,17 @@ export const ContactSection: React.FC = () => {
                     </a>
                   </div>
                 </div>
-
-                <div className="flex items-start gap-2.5 pt-2 border-t border-neutral-200/80">
-                  <Clock className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-neutral-500 block text-xs">Office Hours Schedule</span>
-                    <span className="font-medium text-neutral-900">{profile.officeHours}</span>
-                    <p className="text-xs text-neutral-500 mt-0.5">
-                      Current students may drop in or book via department appointment slots.
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* Note for Prospective Students */}
+            {/* Note for Prospective Students & Fellows */}
             <div className="p-5 border border-neutral-200 rounded-md space-y-2 text-xs font-dm text-neutral-600 bg-white">
               <h4 className="font-semibold text-neutral-900 uppercase tracking-wider text-[11px]">
-                Note for Prospective Ph.D. Applicants:
+                Note for Prospective PhD Applicants:
               </h4>
               <p className="leading-relaxed">
-                Due to email volume, I cannot pre-evaluate individual CVs outside the formal admissions committee. If you are applying, please designate <em>Hyein Ellen Cho</em> on your official Monash University research degree application.
+                {profile.prospectiveStudentsNote ||
+                  'Please note that I am not accepting any research students until 2028.'}
               </p>
             </div>
           </div>
@@ -178,7 +179,7 @@ export const ContactSection: React.FC = () => {
                     Message Dispatched Successfully
                   </h3>
                   <p className="text-xs md:text-sm font-dm text-neutral-600 max-w-md mx-auto">
-                    Thank you for reaching out to Prof. Cho's laboratory. Your message has been received and prioritized according to academic term commitments.
+                    Thank you for reaching out to Prof. Cho's laboratory. Your message has been received and prioritised according to academic term commitments.
                   </p>
                   <button
                     onClick={() => {
@@ -187,13 +188,13 @@ export const ContactSection: React.FC = () => {
                         name: '',
                         email: '',
                         affiliation: '',
-                        topic: 'Prospective Ph.D. Student',
+                        topic: 'Prospective PhD Student',
                         message: '',
                       });
                     }}
                     className="mt-4 px-4 py-2 text-xs font-dm font-medium text-neutral-800 bg-neutral-100 hover:bg-neutral-200 rounded transition-colors"
                   >
-                    Send Another Inquiry
+                    Send Another Enquiry
                   </button>
                 </div>
               ) : (
@@ -209,7 +210,7 @@ export const ContactSection: React.FC = () => {
                         required
                         value={formState.name}
                         onChange={(e) => setFormState({ ...formState, name: e.target.value })}
-                        placeholder="Dr. Jane Smith / Student Name"
+                        placeholder="Jane Smith"
                         className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none text-neutral-900 placeholder-neutral-400"
                       />
                     </div>
@@ -247,7 +248,7 @@ export const ContactSection: React.FC = () => {
 
                     <div className="space-y-1">
                       <label className="text-xs font-dm font-medium text-neutral-700 block">
-                        Inquiry Topic *
+                        Enquiry Topic *
                       </label>
                       <select
                         name="topic"
@@ -255,11 +256,11 @@ export const ContactSection: React.FC = () => {
                         onChange={(e) => setFormState({ ...formState, topic: e.target.value })}
                         className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none text-neutral-900"
                       >
-                        <option value="Prospective Ph.D. Student">Prospective Ph.D. Student</option>
+                        <option value="Prospective PhD Student">Prospective PhD Student</option>
                         <option value="Research Collaboration">Research Collaboration</option>
                         <option value="Keynote / Invited Lecture">Keynote / Invited Lecture</option>
-                        <option value="Press / Media Inquiry">Press / Media Inquiry</option>
-                        <option value="General Academic Inquiry">General Academic Inquiry</option>
+                        <option value="Press / Media Enquiry">Press / Media Enquiry</option>
+                        <option value="General Academic Enquiry">General Academic Enquiry</option>
                       </select>
                     </div>
                   </div>
@@ -274,7 +275,7 @@ export const ContactSection: React.FC = () => {
                       rows={5}
                       value={formState.message}
                       onChange={(e) => setFormState({ ...formState, message: e.target.value })}
-                      placeholder="Please summarize the context of your inquiry, relevant paper references, or proposed timeline..."
+                      placeholder="Please summarise the context of your enquiry, relevant paper references, or proposed timeline..."
                       className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none text-neutral-900 placeholder-neutral-400"
                     />
                   </div>
@@ -299,12 +300,12 @@ export const ContactSection: React.FC = () => {
                         {isSubmitting ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Dispatching Inquiry...</span>
+                            <span>Dispatching Enquiry...</span>
                           </>
                         ) : (
                           <>
                             <Send className="w-3.5 h-3.5" />
-                            <span>Send Academic Inquiry</span>
+                            <span>Send</span>
                           </>
                         )}
                       </button>

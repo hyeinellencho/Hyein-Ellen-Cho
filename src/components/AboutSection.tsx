@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSite } from '../context/SiteContext';
-import { Sparkles, ArrowRight, Compass, ShieldCheck, Microscope, Users } from 'lucide-react';
+import { Sparkles, ArrowRight, Compass, ShieldCheck, Microscope, Users, Edit2 } from 'lucide-react';
 
 export const AboutSection: React.FC = () => {
   const { siteData, setIsAdminOpen, setAdminTab } = useSite();
@@ -12,18 +12,25 @@ export const AboutSection: React.FC = () => {
     <section id="about" className="py-16 md:py-20 bg-white border-b border-neutral-200">
       <div className="max-w-6xl mx-auto px-6">
         {/* Section Header - Editorial Numbering */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-8 border-b border-neutral-200 mb-12">
+        <div className="pb-8 border-b border-neutral-200 mb-12 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <span className="text-xs uppercase tracking-widest font-dm text-neutral-400 block mb-1">
               Overview & Background
             </span>
             <h2 className="text-3xl md:text-4xl font-cormorant font-semibold text-neutral-900 tracking-tight">
-              01. Biography & Academic Mission
+              Biography
             </h2>
           </div>
-          <div className="text-xs font-dm text-neutral-500 max-w-sm">
-            Investigating human-centered foundations for fluid, accountable interaction with generative AI systems.
-          </div>
+          <button
+            onClick={() => {
+              setAdminTab('profile');
+              setIsAdminOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-dm font-medium text-neutral-700 bg-white hover:bg-neutral-100 border border-neutral-300 rounded transition-colors self-start sm:self-auto"
+          >
+            <Edit2 className="w-3.5 h-3.5 text-neutral-500" />
+            <span>Edit Biography</span>
+          </button>
         </div>
 
         {/* Narrative & Side Rail Grid */}
@@ -40,22 +47,35 @@ export const AboutSection: React.FC = () => {
             ))}
 
             <div className="pt-4 p-5 bg-neutral-50 rounded border border-neutral-200/80 space-y-2">
-              <h3 className="text-xs uppercase tracking-wider font-dm font-semibold text-neutral-900">
-                Key Academic Affiliations
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs uppercase tracking-wider font-dm font-semibold text-neutral-900">
+                  Key Academic Affiliations
+                </h3>
+                <button
+                  onClick={() => {
+                    setAdminTab('profile');
+                    setIsAdminOpen(true);
+                  }}
+                  className="text-[11px] text-neutral-400 hover:text-neutral-700 underline"
+                  title="Edit affiliations"
+                >
+                  Edit
+                </button>
+              </div>
               <ul className="text-xs font-dm text-neutral-600 space-y-1.5 list-none">
-                <li className="flex items-center gap-2">
-                  <span className="text-neutral-400">·</span>
-                  <span>Monash University Faculty of Information Technology (Associate Professor)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-neutral-400">·</span>
-                  <span>Monash Data Futures Institute (MDFI Research Affiliate)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-neutral-400">·</span>
-                  <span>Australian Research Council (ARC) Discovery Project Investigator</span>
-                </li>
+                {(profile.affiliations && profile.affiliations.length > 0
+                  ? profile.affiliations
+                  : [
+                      'Monash Gender and Family Violence Prevention Centre (Lead Researcher)',
+                      'Monash University School of Languages, Literatures, Cultures and Linguistics',
+                      'Monash University Korean Studies Research Hub',
+                    ]
+                ).map((affil, idx) => (
+                  <li key={idx} className="flex items-center gap-2">
+                    <span className="text-neutral-400">·</span>
+                    <span>{affil}</span>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
@@ -68,7 +88,7 @@ export const AboutSection: React.FC = () => {
               </h3>
               <button
                 onClick={() => {
-                  setAdminTab('profile');
+                  setAdminTab('research');
                   setIsAdminOpen(true);
                 }}
                 className="text-xs text-neutral-400 hover:text-neutral-900 underline"

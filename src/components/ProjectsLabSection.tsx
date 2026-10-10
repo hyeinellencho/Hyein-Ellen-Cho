@@ -16,10 +16,10 @@ export const ProjectsLabSection: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-8 border-b border-neutral-200 mb-12">
           <div>
             <span className="text-xs uppercase tracking-widest font-dm text-neutral-400 block mb-1">
-              Active Grants & Group
+              Research Initiatives
             </span>
             <h2 className="text-3xl md:text-4xl font-cormorant font-semibold text-neutral-900 tracking-tight">
-              03. Research Initiatives & CollabAI Studio
+              Current Research Projects
             </h2>
           </div>
           <div className="flex items-center gap-3">
@@ -125,10 +125,10 @@ export const ProjectsLabSection: React.FC = () => {
           <div className="flex items-center justify-between pb-4 border-b border-neutral-200 mb-8">
             <div>
               <h3 className="text-xl font-cormorant font-semibold text-neutral-900">
-                CollabAI Research Group Members & Alumni
+                Past and Current PhD Candidates and Postdocs
               </h3>
               <p className="text-xs font-dm text-neutral-500">
-                Ph.D. candidates, postdocs, and research collaborators advised by Prof. Cho.
+                PhD candidates and postdocs advised by Dr Cho
               </p>
             </div>
           </div>
@@ -184,10 +184,10 @@ export const ProjectsLabSection: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-1.5 max-w-2xl">
               <h4 className="text-lg font-cormorant font-semibold text-white">
-                Prospective Ph.D. Applicants & Postdoctoral Fellows
+                Note for Prospective PhD Applicants
               </h4>
               <p className="text-xs md:text-sm font-dm text-neutral-300 leading-relaxed">
-                I am actively considering applications for Fall 2027 doctoral research candidates via the Monash University Faculty of Information Technology. Please mention my name in your research proposal and review our recent CHI/UIST publications before reaching out.
+                Please note that I am not accepting any research students until 2028.
               </p>
             </div>
             <a
@@ -195,7 +195,7 @@ export const ProjectsLabSection: React.FC = () => {
               className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-dm font-medium text-neutral-900 bg-white hover:bg-neutral-100 rounded transition-colors whitespace-nowrap shrink-0"
             >
               <Mail className="w-3.5 h-3.5" />
-              <span>Inquiry Instructions</span>
+              <span>Contact</span>
             </a>
           </div>
         </div>

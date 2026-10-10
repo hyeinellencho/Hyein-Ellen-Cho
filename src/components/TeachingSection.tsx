@@ -16,7 +16,7 @@ export const TeachingSection: React.FC = () => {
               Pedagogy & Curriculum
             </span>
             <h2 className="text-3xl md:text-4xl font-cormorant font-semibold text-neutral-900 tracking-tight">
-              04. University Teaching & Course Instruction
+              University Teaching & Course Instruction
             </h2>
           </div>
           <div className="flex items-center gap-3">

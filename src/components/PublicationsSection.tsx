@@ -13,26 +13,33 @@ export const PublicationsSection: React.FC = () => {
 
   const typeTabs: { label: string; value: string }[] = [
     { label: 'All Publications', value: 'all' },
-    { label: 'Conference Papers', value: 'conference' },
     { label: 'Journal Articles', value: 'journal' },
-    { label: 'Preprints', value: 'preprint' },
     { label: 'Chapters & Books', value: 'book_chapter' },
+    { label: 'Op-Eds', value: 'oped' },
   ];
 
-  const filteredPublications = useMemo(() => {
-    return publications.filter((pub) => {
-      const matchesType = selectedType === 'all' || pub.type === selectedType;
-      const q = searchQuery.toLowerCase().trim();
-      const matchesSearch =
-        !q ||
-        pub.title.toLowerCase().includes(q) ||
-        pub.authors.toLowerCase().includes(q) ||
-        pub.venue.toLowerCase().includes(q) ||
-        pub.year.toString().includes(q);
+  const visiblePublications = useMemo(() => {
+    return [...publications]
+      .filter((pub) => pub.type !== 'conference' && pub.type !== 'preprint')
+      .sort((a, b) => b.year - a.year);
+  }, [publications]);
 
-      return matchesType && matchesSearch;
-    });
-  }, [publications, selectedType, searchQuery]);
+  const filteredPublications = useMemo(() => {
+    return visiblePublications
+      .filter((pub) => {
+        const matchesType = selectedType === 'all' || pub.type === selectedType;
+        const q = searchQuery.toLowerCase().trim();
+        const matchesSearch =
+          !q ||
+          pub.title.toLowerCase().includes(q) ||
+          pub.authors.toLowerCase().includes(q) ||
+          pub.venue.toLowerCase().includes(q) ||
+          pub.year.toString().includes(q);
+
+        return matchesType && matchesSearch;
+      })
+      .sort((a, b) => b.year - a.year);
+  }, [visiblePublications, selectedType, searchQuery]);
 
   const toggleAbstract = (id: string) => {
     setExpandedAbstracts((prev) => ({
@@ -69,7 +76,7 @@ export const PublicationsSection: React.FC = () => {
               Scholarly Output
             </span>
             <h2 className="text-3xl md:text-4xl font-cormorant font-semibold text-neutral-900 tracking-tight">
-              02. Peer-Reviewed Publications & Manuscripts
+              Publications
             </h2>
           </div>
           <div className="flex items-center gap-3">
@@ -122,7 +129,7 @@ export const PublicationsSection: React.FC = () => {
         <div className="flex items-center justify-between text-xs font-dm text-neutral-500 mb-6 px-1">
           <span>
             Showing <strong className="text-neutral-900">{filteredPublications.length}</strong> of{' '}
-            {publications.length} works
+            {visiblePublications.length} works
           </span>
           <span className="hidden sm:inline">
             Click <Quote className="w-3 h-3 inline mx-0.5 text-neutral-400" /> to export BibTeX citation entry

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSite } from '../context/SiteContext';
-import { Post, Publication, Course, ResearchProject, LabMember, PostCategory, PublicationType } from '../types';
+import { Post, Publication, Course, ResearchProject, LabMember, PostCategory, PublicationType, ResearchInterest } from '../types';
+import { compressImageFile } from '../utils/imageCompressor';
 import {
   X,
   FileText,
@@ -22,6 +23,7 @@ import {
   Eye,
   ExternalLink,
   Share2,
+  Lightbulb,
 } from 'lucide-react';
 
 export const AdminDashboardModal: React.FC = () => {
@@ -32,6 +34,9 @@ export const AdminDashboardModal: React.FC = () => {
     adminTab,
     setAdminTab,
     updateProfile,
+    addResearchInterest,
+    updateResearchInterest,
+    deleteResearchInterest,
     addPost,
     updatePost,
     deletePost,
@@ -102,7 +107,7 @@ export const AdminDashboardModal: React.FC = () => {
     authors: 'Hyein Ellen Cho, ',
     venue: '',
     year: 2026,
-    type: 'conference',
+    type: 'journal',
     doi: '',
     pdfUrl: '#',
     codeUrl: '',
@@ -114,6 +119,234 @@ export const AdminDashboardModal: React.FC = () => {
 
   // Profile Editor state
   const [profileForm, setProfileForm] = useState({ ...siteData.profile });
+  const [primaryInterestsText, setPrimaryInterestsText] = useState(
+    (siteData.profile.primaryInterests || []).join(', ')
+  );
+  const [bioParagraphsText, setBioParagraphsText] = useState(
+    (siteData.profile.bioParagraphs || []).join('\n\n')
+  );
+  const [affiliationsText, setAffiliationsText] = useState(
+    (siteData.profile.affiliations || []).join('\n')
+  );
+  const [prospectiveNoteText, setProspectiveNoteText] = useState(
+    siteData.profile.prospectiveStudentsNote || ''
+  );
+
+  useEffect(() => {
+    setProfileForm({ ...siteData.profile });
+    setPrimaryInterestsText((siteData.profile.primaryInterests || []).join(', '));
+    setBioParagraphsText((siteData.profile.bioParagraphs || []).join('\n\n'));
+    setAffiliationsText((siteData.profile.affiliations || []).join('\n'));
+    setProspectiveNoteText(siteData.profile.prospectiveStudentsNote || '');
+  }, [siteData.profile, isAdminOpen]);
+
+  // Core Research Themes Editor state
+  const [editingThemeId, setEditingThemeId] = useState<string | null>(null);
+  const [themeForm, setThemeForm] = useState<{
+    title: string;
+    description: string;
+    keywordsText: string;
+  }>({
+    title: '',
+    description: '',
+    keywordsText: '',
+  });
+
+  const handleEditTheme = (item: ResearchInterest) => {
+    setEditingThemeId(item.id);
+    setThemeForm({
+      title: item.title,
+      description: item.description,
+      keywordsText: item.keywords.join(', '),
+    });
+  };
+
+  const handleCancelThemeEdit = () => {
+    setEditingThemeId(null);
+    setThemeForm({
+      title: '',
+      description: '',
+      keywordsText: '',
+    });
+  };
+
+  const handleSaveTheme = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!themeForm.title.trim()) return;
+
+    const keywords = themeForm.keywordsText
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean);
+
+    if (editingThemeId) {
+      updateResearchInterest(editingThemeId, {
+        title: themeForm.title.trim(),
+        description: themeForm.description.trim(),
+        keywords,
+      });
+      showNotice('Research theme updated');
+      setEditingThemeId(null);
+    } else {
+      addResearchInterest({
+        title: themeForm.title.trim(),
+        description: themeForm.description.trim(),
+        keywords,
+      });
+      showNotice('New research theme added');
+    }
+
+    setThemeForm({
+      title: '',
+      description: '',
+      keywordsText: '',
+    });
+  };
+
+  // Project Editor state
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [projectForm, setProjectForm] = useState<{
+    title: string;
+    kicker: string;
+    timeframe: string;
+    funding: string;
+    summary: string;
+    fullDescription: string;
+    collaborators: string;
+    status: 'Active' | 'Completed';
+    imageUrl: string;
+    externalUrl: string;
+  }>({
+    title: '',
+    kicker: '',
+    timeframe: '',
+    funding: '',
+    summary: '',
+    fullDescription: '',
+    collaborators: '',
+    status: 'Active',
+    imageUrl: '',
+    externalUrl: '',
+  });
+
+  const handleEditProject = (proj: ResearchProject) => {
+    setEditingProjectId(proj.id);
+    setProjectForm({
+      title: proj.title,
+      kicker: proj.kicker || '',
+      timeframe: proj.timeframe || '',
+      funding: proj.funding || '',
+      summary: proj.summary || '',
+      fullDescription: proj.fullDescription || '',
+      collaborators: proj.collaborators || '',
+      status: proj.status || 'Active',
+      imageUrl: proj.imageUrl || '',
+      externalUrl: proj.externalUrl || '',
+    });
+  };
+
+  const handleCancelProjectEdit = () => {
+    setEditingProjectId(null);
+    setProjectForm({
+      title: '',
+      kicker: '',
+      timeframe: '',
+      funding: '',
+      summary: '',
+      fullDescription: '',
+      collaborators: '',
+      status: 'Active',
+      imageUrl: '',
+      externalUrl: '',
+    });
+  };
+
+  const handleSaveProject = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectForm.title.trim()) return;
+
+    if (editingProjectId) {
+      updateProject(editingProjectId, projectForm);
+      showNotice('Project updated successfully');
+      setEditingProjectId(null);
+    } else {
+      addProject(projectForm);
+      showNotice('New project added successfully');
+    }
+
+    setProjectForm({
+      title: '',
+      kicker: '',
+      timeframe: '',
+      funding: '',
+      summary: '',
+      fullDescription: '',
+      collaborators: '',
+      status: 'Active',
+      imageUrl: '',
+      externalUrl: '',
+    });
+  };
+
+  // Lab Member Editor state
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [memberForm, setMemberForm] = useState<{
+    name: string;
+    role: 'Postdoctoral Fellow' | 'Ph.D. Student' | 'Master Student' | 'Undergraduate' | 'Alumni';
+    topic: string;
+    websiteUrl: string;
+    scholarUrl: string;
+  }>({
+    name: '',
+    role: 'Ph.D. Student',
+    topic: '',
+    websiteUrl: '',
+    scholarUrl: '',
+  });
+
+  const handleEditMember = (member: LabMember) => {
+    setEditingMemberId(member.id);
+    setMemberForm({
+      name: member.name,
+      role: member.role,
+      topic: member.topic,
+      websiteUrl: member.websiteUrl || '',
+      scholarUrl: member.scholarUrl || '',
+    });
+  };
+
+  const handleCancelMemberEdit = () => {
+    setEditingMemberId(null);
+    setMemberForm({
+      name: '',
+      role: 'Ph.D. Student',
+      topic: '',
+      websiteUrl: '',
+      scholarUrl: '',
+    });
+  };
+
+  const handleSaveMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!memberForm.name.trim()) return;
+
+    if (editingMemberId) {
+      updateLabMember(editingMemberId, memberForm);
+      showNotice('Lab member updated successfully');
+      setEditingMemberId(null);
+    } else {
+      addLabMember(memberForm);
+      showNotice('New member added successfully');
+    }
+
+    setMemberForm({
+      name: '',
+      role: 'Ph.D. Student',
+      topic: '',
+      websiteUrl: '',
+      scholarUrl: '',
+    });
+  };
 
   // SEO Editor state
   const [seoForm, setSeoForm] = useState({ ...siteData.seo });
@@ -221,8 +454,28 @@ export const AdminDashboardModal: React.FC = () => {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile(profileForm);
-    showNotice('Profile information saved');
+    const primaryInterests = primaryInterestsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const bioParagraphs = bioParagraphsText
+      .split(/\n\s*\n/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    const affiliations = affiliationsText
+      .split('\n')
+      .map((a) => a.trim())
+      .filter(Boolean);
+
+    updateProfile({
+      ...profileForm,
+      officeHours: '',
+      primaryInterests,
+      bioParagraphs: bioParagraphs.length > 0 ? bioParagraphs : profileForm.bioParagraphs,
+      affiliations,
+      prospectiveStudentsNote: prospectiveNoteText.trim(),
+    });
+    showNotice('Profile, biography & settings saved successfully');
   };
 
   const handleSaveSeo = (e: React.FormEvent) => {
@@ -293,7 +546,8 @@ export const AdminDashboardModal: React.FC = () => {
           {[
             { id: 'publications', label: 'Publications', icon: BookOpen },
             { id: 'profile', label: 'Profile & Bio', icon: User },
-            { id: 'lab', label: 'Lab & Research', icon: Users },
+            { id: 'research', label: 'Research Themes', icon: Lightbulb },
+            { id: 'lab', label: 'Research Initiatives & Team', icon: Users },
             { id: 'theme', label: 'Design & Theme', icon: Palette },
             { id: 'seo', label: 'SEO & Social', icon: Search },
             { id: 'backup', label: 'Backup / Reset', icon: Database },
@@ -528,7 +782,7 @@ export const AdminDashboardModal: React.FC = () => {
                         authors: 'Hyein Ellen Cho, ',
                         venue: '',
                         year: 2026,
-                        type: 'conference',
+                        type: 'journal',
                         doi: '',
                         pdfUrl: '#',
                         codeUrl: '',
@@ -554,7 +808,7 @@ export const AdminDashboardModal: React.FC = () => {
                     required
                     value={pubForm.title}
                     onChange={(e) => setPubForm({ ...pubForm, title: e.target.value })}
-                    placeholder="e.g. Adaptive Cognitive Hand-offs in Human-Large Language Model Problem Solving"
+                    placeholder="e.g. Navigating faith and gender-based violence: the role of faith communities in addressing family violence"
                     className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
                   />
                 </div>
@@ -566,7 +820,7 @@ export const AdminDashboardModal: React.FC = () => {
                     required
                     value={pubForm.authors}
                     onChange={(e) => setPubForm({ ...pubForm, authors: e.target.value })}
-                    placeholder="Hyein Ellen Cho, Sarah Chen, Julian Vance..."
+                    placeholder="Hyein Ellen Cho, Leah Gerber, Jim Hlavac..."
                     className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
                   />
                 </div>
@@ -602,11 +856,9 @@ export const AdminDashboardModal: React.FC = () => {
                       onChange={(e) => setPubForm({ ...pubForm, type: e.target.value as PublicationType })}
                       className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
                     >
-                      <option value="conference">Conference Paper</option>
                       <option value="journal">Journal Article</option>
-                      <option value="preprint">Preprint (arXiv)</option>
                       <option value="book_chapter">Book Chapter / Monograph</option>
-                      <option value="workshop">Workshop</option>
+                      <option value="oped">Op-ed / Public Commentary</option>
                     </select>
                   </div>
                 </div>
@@ -811,18 +1063,6 @@ export const AdminDashboardModal: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-dm font-medium text-neutral-700 block">Office Hours</label>
-                    <input
-                      type="text"
-                      value={profileForm.officeHours}
-                      onChange={(e) => setProfileForm({ ...profileForm, officeHours: e.target.value })}
-                      className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
                     <label className="text-xs font-dm font-medium text-neutral-700 block">Primary Email</label>
                     <input
                       type="email"
@@ -831,21 +1071,69 @@ export const AdminDashboardModal: React.FC = () => {
                       className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
                     />
                   </div>
+                </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-dm font-medium text-neutral-700 block">Academic Notice Ribbon Text</label>
-                    <input
-                      type="text"
-                      value={profileForm.statusBadge}
-                      onChange={(e) => setProfileForm({ ...profileForm, statusBadge: e.target.value })}
-                      className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-dm font-medium text-neutral-700 block">Postal Address</label>
+                  <input
+                    type="text"
+                    value={profileForm.address}
+                    onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                    placeholder="Postal address..."
+                    className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Primary Research Focus Tags */}
+                <div className="space-y-1">
+                  <label className="text-xs font-dm font-medium text-neutral-700 block">
+                    Primary Research Focus Tags (displayed on top Hero)
+                  </label>
+                  <input
+                    type="text"
+                    value={primaryInterestsText}
+                    onChange={(e) => setPrimaryInterestsText(e.target.value)}
+                    placeholder="Gender-based violence, Migration, Social justice, Korean diaspora, Qualitative research"
+                    className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                  />
+                  <span className="text-[11px] text-neutral-500 block">
+                    Comma-separated keywords displayed under your titles in the Hero section.
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-xs font-dm font-medium text-neutral-700 block">Portrait Image URL / Path</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Portrait Image URL / Path</label>
+                      <label className="text-[11px] font-dm text-neutral-600 hover:text-neutral-900 underline cursor-pointer">
+                        Upload File (사진 업로드)
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              try {
+                                const compressed = await compressImageFile(file, 500, 0.8);
+                                setProfileForm((prev) => ({ ...prev, avatarUrl: compressed }));
+                                showNotice('Portrait photo uploaded & optimized');
+                              } catch (err) {
+                                console.error('Image compression failed:', err);
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                  if (typeof reader.result === 'string') {
+                                    setProfileForm((prev) => ({ ...prev, avatarUrl: reader.result as string }));
+                                    showNotice('Portrait photo uploaded');
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
                     <input
                       type="text"
                       value={profileForm.avatarUrl}
@@ -871,12 +1159,50 @@ export const AdminDashboardModal: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Full Biography Paragraphs */}
                 <div className="space-y-1">
-                  <label className="text-xs font-dm font-medium text-neutral-700 block">Lead Bio Statement</label>
+                  <label className="text-xs font-dm font-medium text-neutral-700 block">
+                    Full Biography Paragraphs (본문 전체 내용)
+                  </label>
+                  <textarea
+                    rows={6}
+                    value={bioParagraphsText}
+                    onChange={(e) => setBioParagraphsText(e.target.value)}
+                    placeholder="Enter paragraphs separated by empty lines..."
+                    className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none leading-relaxed"
+                  />
+                  <span className="text-[11px] text-neutral-500 block">
+                    Separate each paragraph with an empty line. Each paragraph is rendered in the Biography section.
+                  </span>
+                </div>
+
+                {/* Key Academic Affiliations */}
+                <div className="space-y-1">
+                  <label className="text-xs font-dm font-medium text-neutral-700 block">
+                    Key Academic Affiliations (주요 소속 및 직책)
+                  </label>
                   <textarea
                     rows={3}
-                    value={profileForm.bioLead}
-                    onChange={(e) => setProfileForm({ ...profileForm, bioLead: e.target.value })}
+                    value={affiliationsText}
+                    onChange={(e) => setAffiliationsText(e.target.value)}
+                    placeholder="Monash University Department of Computer Science (Associate Professor)&#10;Australian Research Council (ARC) Discovery Project Investigator"
+                    className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                  />
+                  <span className="text-[11px] text-neutral-500 block">
+                    Enter one affiliation per line.
+                  </span>
+                </div>
+
+                {/* Note for Prospective Students */}
+                <div className="space-y-1">
+                  <label className="text-xs font-dm font-medium text-neutral-700 block">
+                    Note for Prospective Ph.D. Applicants & Postdoctoral Fellows
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={prospectiveNoteText}
+                    onChange={(e) => setProspectiveNoteText(e.target.value)}
+                    placeholder="Please note that I am not accepting any research students until 2028."
                     className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
                   />
                 </div>
@@ -886,9 +1212,179 @@ export const AdminDashboardModal: React.FC = () => {
                   className="inline-flex items-center gap-2 px-4 py-2 text-xs font-dm font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded transition-colors"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>Save Profile Updates</span>
+                  <span>Save Profile & Biography Updates</span>
                 </button>
               </form>
+            </div>
+          )}
+
+          {/* TAB: CORE RESEARCH THEMES MANAGER */}
+          {adminTab === 'research' && (
+            <div className="space-y-6 max-w-3xl mx-auto">
+              <div className="pb-3 border-b border-neutral-200">
+                <h3 className="text-lg font-cormorant font-semibold text-neutral-900">
+                  Core Research Themes & Pillars
+                </h3>
+                <p className="text-xs font-dm text-neutral-500">
+                  Add, edit, or remove the core research pillars displayed next to your Biography.
+                </p>
+              </div>
+
+              {/* Form to Add or Edit Research Theme */}
+              <form onSubmit={handleSaveTheme} className="p-5 bg-neutral-50 border border-neutral-200 rounded-md space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-dm font-semibold text-neutral-800 uppercase tracking-wider">
+                    {editingThemeId ? 'Edit Research Theme' : 'Add New Research Theme'}
+                  </h4>
+                  {editingThemeId && (
+                    <button
+                      type="button"
+                      onClick={handleCancelThemeEdit}
+                      className="text-xs font-dm text-neutral-600 underline"
+                    >
+                      Cancel Editing
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-dm font-medium text-neutral-700 block">
+                    Theme Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={themeForm.title}
+                    onChange={(e) => setThemeForm({ ...themeForm, title: e.target.value })}
+                    placeholder="e.g. Human-AI Collaboration & Mixed-Initiative Systems"
+                    className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-dm font-medium text-neutral-700 block">
+                    Description *
+                  </label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={themeForm.description}
+                    onChange={(e) => setThemeForm({ ...themeForm, description: e.target.value })}
+                    placeholder="Brief explanation of this research pillar and inquiry questions..."
+                    className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-dm font-medium text-neutral-700 block">
+                    Keywords (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={themeForm.keywordsText}
+                    onChange={(e) => setThemeForm({ ...themeForm, keywordsText: e.target.value })}
+                    placeholder="e.g. Interaction Paradigms, Cognitive Ergonomics, Shared Mental Models"
+                    className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                  />
+                  <span className="text-[11px] text-neutral-500 block">
+                    Separate multiple keywords with commas (,).
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-dm font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded transition-colors"
+                  >
+                    {editingThemeId ? <Save className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                    <span>{editingThemeId ? 'Update Research Theme' : 'Add Research Theme'}</span>
+                  </button>
+                  {editingThemeId && (
+                    <button
+                      type="button"
+                      onClick={handleCancelThemeEdit}
+                      className="px-3 py-2 text-xs font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+
+              {/* Existing Themes List */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-dm uppercase tracking-wider font-semibold text-neutral-800">
+                  Current Research Themes ({siteData.researchInterests.length})
+                </h4>
+
+                <div className="space-y-3">
+                  {siteData.researchInterests.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className="p-4 bg-white border border-neutral-200 rounded-md flex flex-col md:flex-row md:items-start justify-between gap-4"
+                    >
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-dm px-2 py-0.5 bg-neutral-100 text-neutral-600 rounded">
+                            Theme #{idx + 1}
+                          </span>
+                          <h5 className="text-sm font-dm font-semibold text-neutral-900">
+                            {item.title}
+                          </h5>
+                        </div>
+                        <p className="text-xs font-dm text-neutral-600 leading-relaxed">
+                          {item.description}
+                        </p>
+                        {item.keywords && item.keywords.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {item.keywords.map((kw, kwIdx) => (
+                              <span
+                                key={kwIdx}
+                                className="text-[10px] font-dm bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded"
+                              >
+                                {kw}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleEditTheme(item)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-dm text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded transition-colors"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm(`Delete theme "${item.title}"?`)) {
+                              deleteResearchInterest(item.id);
+                              if (editingThemeId === item.id) {
+                                handleCancelThemeEdit();
+                              }
+                              showNotice('Research theme deleted');
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {siteData.researchInterests.length === 0 && (
+                    <div className="p-8 text-center bg-neutral-50 border border-neutral-200 rounded text-neutral-500 text-xs font-dm">
+                      No research themes found. Use the form above to add research themes.
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -933,40 +1429,323 @@ export const AdminDashboardModal: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 5: LAB & TEAM MANAGER */}
+          {/* TAB 5: RESEARCH PROJECTS & TEAM MANAGER */}
           {adminTab === 'lab' && (
-            <div className="space-y-6 max-w-3xl mx-auto">
+            <div className="space-y-10 max-w-4xl mx-auto">
               <div className="pb-3 border-b border-neutral-200">
                 <h3 className="text-lg font-cormorant font-semibold text-neutral-900">
-                  CollabAI Research Group & Laboratory
+                  Research Initiatives & Team Management
                 </h3>
                 <p className="text-xs font-dm text-neutral-500">
-                  Manage lab personnel, alumni, and ongoing research initiatives.
+                  Edit and add research projects, funding, collaborators, and advisee team members.
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <h4 className="text-xs font-dm uppercase font-semibold text-neutral-700">Team Members ({siteData.labMembers.length})</h4>
-                <div className="divide-y divide-neutral-100 border border-neutral-200 rounded">
-                  {siteData.labMembers.map((member) => (
-                    <div key={member.id} className="p-3 flex items-center justify-between text-xs font-dm">
-                      <div>
-                        <strong className="text-neutral-900">{member.name}</strong> ({member.role})
-                        <div className="text-neutral-500">{member.topic}</div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Remove ${member.name}?`)) {
-                            deleteLabMember(member.id);
-                            showNotice('Member removed');
-                          }
-                        }}
-                        className="text-red-600 hover:underline text-xs"
-                      >
-                        Remove
-                      </button>
+              {/* SECTION A: PROJECTS */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-dm uppercase tracking-wider font-semibold text-neutral-900">
+                    {editingProjectId ? 'Edit Research Project' : 'Add New Research Project'}
+                  </h4>
+                  {editingProjectId && (
+                    <button
+                      onClick={handleCancelProjectEdit}
+                      className="text-xs font-dm text-neutral-600 hover:text-neutral-900 underline"
+                    >
+                      Cancel Editing
+                    </button>
+                  )}
+                </div>
+
+                <form onSubmit={handleSaveProject} className="p-5 bg-neutral-50 border border-neutral-200 rounded-md space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Project Title *</label>
+                      <input
+                        type="text"
+                        required
+                        value={projectForm.title}
+                        onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
+                        placeholder="e.g. Cognitive-State Driven Mixed-Initiative Decision Frameworks"
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      />
                     </div>
-                  ))}
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Kicker / Grant Tag</label>
+                      <input
+                        type="text"
+                        value={projectForm.kicker}
+                        onChange={(e) => setProjectForm({ ...projectForm, kicker: e.target.value })}
+                        placeholder="e.g. NSF CAREER AWARD #2348910 · 2024–2029"
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Timeframe</label>
+                      <input
+                        type="text"
+                        value={projectForm.timeframe}
+                        onChange={(e) => setProjectForm({ ...projectForm, timeframe: e.target.value })}
+                        placeholder="e.g. 2024 – 2029"
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Funding Body / Amount</label>
+                      <input
+                        type="text"
+                        value={projectForm.funding}
+                        onChange={(e) => setProjectForm({ ...projectForm, funding: e.target.value })}
+                        placeholder="e.g. Australian Research Council Discovery Grant"
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Collaborating Partners</label>
+                      <input
+                        type="text"
+                        value={projectForm.collaborators}
+                        onChange={(e) => setProjectForm({ ...projectForm, collaborators: e.target.value })}
+                        placeholder="e.g. Monash Health, CSIRO Data61"
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Short Summary</label>
+                      <textarea
+                        rows={2}
+                        value={projectForm.summary}
+                        onChange={(e) => setProjectForm({ ...projectForm, summary: e.target.value })}
+                        placeholder="Brief summary shown in project cards..."
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Full Description</label>
+                      <textarea
+                        rows={3}
+                        value={projectForm.fullDescription}
+                        onChange={(e) => setProjectForm({ ...projectForm, fullDescription: e.target.value })}
+                        placeholder="Detailed project background, methodology, and objectives..."
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-dm font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded transition-colors"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>{editingProjectId ? 'Update Project' : 'Add Project'}</span>
+                    </button>
+                    {editingProjectId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelProjectEdit}
+                        className="px-3 py-2 text-xs font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+
+                {/* Existing Projects List */}
+                <div className="space-y-3">
+                  <h5 className="text-xs font-dm uppercase font-semibold text-neutral-700">
+                    Existing Projects ({siteData.projects.length})
+                  </h5>
+                  <div className="divide-y divide-neutral-200 border border-neutral-200 rounded-md">
+                    {siteData.projects.map((proj) => (
+                      <div key={proj.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-neutral-50">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <strong className="text-neutral-900 text-sm font-dm">{proj.title}</strong>
+                            {proj.kicker && (
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-neutral-100 text-neutral-600 rounded">
+                                {proj.kicker}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs font-dm text-neutral-500 line-clamp-1">{proj.summary || proj.fullDescription}</p>
+                          <div className="text-[11px] font-dm text-neutral-400">
+                            {proj.funding} {proj.timeframe && `· ${proj.timeframe}`}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleEditProject(proj)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-dm text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded transition-colors"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`Remove project "${proj.title}"?`)) {
+                                deleteProject(proj.id);
+                                showNotice('Project removed');
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION B: LAB MEMBERS & ADVISEES */}
+              <div className="space-y-6 pt-6 border-t border-neutral-200">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-dm uppercase tracking-wider font-semibold text-neutral-900">
+                    {editingMemberId ? 'Edit Team Member' : 'Add Team Member / Advisee'}
+                  </h4>
+                  {editingMemberId && (
+                    <button
+                      onClick={handleCancelMemberEdit}
+                      className="text-xs font-dm text-neutral-600 hover:text-neutral-900 underline"
+                    >
+                      Cancel Editing
+                    </button>
+                  )}
+                </div>
+
+                <form onSubmit={handleSaveMember} className="p-5 bg-neutral-50 border border-neutral-200 rounded-md space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={memberForm.name}
+                        onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
+                        placeholder="e.g. Sarah Chen"
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Role *</label>
+                      <select
+                        value={memberForm.role}
+                        onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value as any })}
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      >
+                        <option value="Ph.D. Student">Ph.D. Student</option>
+                        <option value="Postdoctoral Fellow">Postdoctoral Fellow</option>
+                        <option value="Master Student">Master Student</option>
+                        <option value="Undergraduate">Undergraduate</option>
+                        <option value="Alumni">Alumni</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Personal Website URL</label>
+                      <input
+                        type="url"
+                        value={memberForm.websiteUrl}
+                        onChange={(e) => setMemberForm({ ...memberForm, websiteUrl: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1 md:col-span-3">
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Research Topic / Focus</label>
+                      <input
+                        type="text"
+                        value={memberForm.topic}
+                        onChange={(e) => setMemberForm({ ...memberForm, topic: e.target.value })}
+                        placeholder="e.g. Mixed-Initiative Human-LLM Interaction & Mental Model Alignment"
+                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-dm font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded transition-colors"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>{editingMemberId ? 'Update Member' : 'Add Member'}</span>
+                    </button>
+                    {editingMemberId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelMemberEdit}
+                        className="px-3 py-2 text-xs font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+
+                {/* Existing Members List */}
+                <div className="space-y-3">
+                  <h5 className="text-xs font-dm uppercase font-semibold text-neutral-700">
+                    Advisees & Personnel ({siteData.labMembers.length})
+                  </h5>
+                  <div className="divide-y divide-neutral-200 border border-neutral-200 rounded-md">
+                    {siteData.labMembers.map((member) => (
+                      <div key={member.id} className="p-3.5 flex items-center justify-between text-xs font-dm hover:bg-neutral-50">
+                        <div>
+                          <strong className="text-neutral-900">{member.name}</strong>{' '}
+                          <span className="text-neutral-500 font-normal">({member.role})</span>
+                          <div className="text-neutral-600 text-[11px] mt-0.5">{member.topic}</div>
+                          {member.websiteUrl && (
+                            <a
+                              href={member.websiteUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-neutral-400 hover:text-neutral-700 underline text-[11px]"
+                            >
+                              {member.websiteUrl}
+                            </a>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleEditMember(member)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-dm text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded transition-colors"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`Remove ${member.name}?`)) {
+                                deleteLabMember(member.id);
+                                showNotice('Member removed');
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1117,6 +1896,30 @@ export const AdminDashboardModal: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
+                    <label className="text-xs font-dm font-medium text-neutral-700 block">Google Scholar Profile URL</label>
+                    <input
+                      type="text"
+                      value={seoForm.googleScholarUrl || ''}
+                      onChange={(e) => setSeoForm({ ...seoForm, googleScholarUrl: e.target.value })}
+                      placeholder="https://scholar.google.com/citations?..."
+                      className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-dm font-medium text-neutral-700 block">LinkedIn URL</label>
+                    <input
+                      type="text"
+                      value={seoForm.linkedinUrl || ''}
+                      onChange={(e) => setSeoForm({ ...seoForm, linkedinUrl: e.target.value })}
+                      placeholder="https://www.linkedin.com/in/..."
+                      className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
                     <label className="text-xs font-dm font-medium text-neutral-700 block">ORCID ID</label>
                     <input
                       type="text"
@@ -1128,19 +1931,7 @@ export const AdminDashboardModal: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-dm font-medium text-neutral-700 block">DBLP Profile URL</label>
-                    <input
-                      type="text"
-                      value={seoForm.dblpUrl}
-                      onChange={(e) => setSeoForm({ ...seoForm, dblpUrl: e.target.value })}
-                      className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-dm font-medium text-neutral-700 block">GitHub Organization / Profile</label>
+                    <label className="text-xs font-dm font-medium text-neutral-700 block">GitHub Profile / URL</label>
                     <input
                       type="text"
                       value={seoForm.githubUrl}
@@ -1148,16 +1939,16 @@ export const AdminDashboardModal: React.FC = () => {
                       className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
                     />
                   </div>
+                </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-dm font-medium text-neutral-700 block">Twitter / X Handle</label>
-                    <input
-                      type="text"
-                      value={seoForm.twitterHandle}
-                      onChange={(e) => setSeoForm({ ...seoForm, twitterHandle: e.target.value })}
-                      className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-dm font-medium text-neutral-700 block">Twitter / X Handle</label>
+                  <input
+                    type="text"
+                    value={seoForm.twitterHandle}
+                    onChange={(e) => setSeoForm({ ...seoForm, twitterHandle: e.target.value })}
+                    className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                  />
                 </div>
 
                 <button
@@ -1206,8 +1997,9 @@ export const AdminDashboardModal: React.FC = () => {
     },
     url: siteData.seo.canonicalUrl,
     sameAs: [
+      siteData.seo.googleScholarUrl || `https://scholar.google.com/citations?user=${siteData.seo.googleScholarId}`,
       `https://orcid.org/${siteData.seo.orcidId}`,
-      siteData.seo.dblpUrl,
+      siteData.seo.linkedinUrl,
       siteData.seo.githubUrl,
     ],
   },
