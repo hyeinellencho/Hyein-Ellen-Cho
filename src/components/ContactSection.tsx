@@ -291,7 +291,7 @@ export const ContactSection: React.FC = () => {
                   )}
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-neutral-100">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="submit"
                         disabled={isSubmitting}
@@ -310,19 +310,32 @@ export const ContactSection: React.FC = () => {
                         )}
                       </button>
 
+                      <a
+                        href={`mailto:${profile.email}?subject=${encodeURIComponent(
+                          `[Academic Enquiry - ${formState.topic}] from ${formState.name || 'Visitor'}`
+                        )}&body=${encodeURIComponent(
+                          `Sender: ${formState.name || ''}\nEmail: ${formState.email || ''}\nAffiliation: ${formState.affiliation || 'N/A'}\nTopic: ${formState.topic}\n\nMessage:\n${formState.message || ''}`
+                        )}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-dm text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 rounded border border-neutral-200 transition-colors"
+                        title="Open your email client to send directly"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-neutral-500" />
+                        <span>Send via Email App</span>
+                      </a>
+
                       <button
                         type="button"
                         onClick={handleSendTestMessage}
                         disabled={isSubmitting}
-                        className="px-3 py-2 text-xs font-dm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded border border-neutral-200 transition-colors"
-                        title="Send a 1-click test message to your Formspree inbox"
+                        className="px-2.5 py-2 text-[11px] font-dm text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 rounded border border-neutral-200 transition-colors"
+                        title="Send a 1-click test message to your inbox"
                       >
-                        Send 1-Click Test
+                        Test Send
                       </button>
                     </div>
 
                     <span className="text-[11px] font-dm text-neutral-400">
-                      Destination: <span className="font-mono text-neutral-700 font-medium">formspree.io/f/xyekjebq</span>
+                      Forwarded to <span className="font-medium text-neutral-600">{profile.email}</span>
                     </span>
                   </div>
                 </form>

@@ -1144,7 +1144,7 @@ export const AdminDashboardModal: React.FC = () => {
 
                   <div className="space-y-1">
                     <label className="text-xs font-dm font-medium text-neutral-700 block">
-                      Formspree Contact Endpoint URL
+                      Formspree Contact Endpoint URL (이메일 수신 연동)
                     </label>
                     <input
                       type="url"
@@ -1153,8 +1153,8 @@ export const AdminDashboardModal: React.FC = () => {
                       placeholder="https://formspree.io/f/xyekjebq"
                       className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none font-mono text-[11px]"
                     />
-                    <span className="text-[10px] text-neutral-500 block">
-                      All inquiries from the Contact form are collected at this Formspree URL.
+                    <span className="text-[10px] text-neutral-500 block leading-normal">
+                      방문자가 Contact Form을 작성하면 이 URL을 통해 교수님의 이메일함으로 실시간 전달됩니다. (formspree.io 가입 후 본인 전용 폼 주소를 입력하시면 바로 연결됩니다)
                     </span>
                   </div>
                 </div>

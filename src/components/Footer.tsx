@@ -13,23 +13,8 @@ export const Footer: React.FC = () => {
   return (
     <footer className="bg-white border-t border-neutral-200 py-12 text-xs font-dm text-neutral-500">
       <div className="max-w-6xl mx-auto px-6 space-y-8">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 pb-8 border-b border-neutral-100">
-          <div className="space-y-2 max-w-sm">
-            <h3 className="text-base font-cormorant font-semibold text-neutral-900">
-              {profile.name}
-            </h3>
-            <p className="text-neutral-600 leading-relaxed">
-              {profile.title} · {profile.department}
-            </p>
-            <p className="text-neutral-400">
-              {profile.institution}
-              {profile.address && !profile.address.includes('Wellington Road')
-                ? ` · ${profile.address}`
-                : ''}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
+        <div className="flex justify-end pb-8 border-b border-neutral-100">
+          <div className="grid grid-cols-2 gap-10 sm:gap-16 text-left">
             <div className="space-y-2">
               <span className="font-semibold text-neutral-900 uppercase tracking-wider text-[11px] block">
                 Navigation
@@ -37,7 +22,7 @@ export const Footer: React.FC = () => {
               <ul className="space-y-1 text-neutral-600">
                 <li><a href="#about" className="hover:text-neutral-900 transition-colors">Biography</a></li>
                 <li><a href="#publications" className="hover:text-neutral-900 transition-colors">Publications</a></li>
-                <li><a href="#lab" className="hover:text-neutral-900 transition-colors">Research Projects</a></li>
+                <li><a href="#lab" className="hover:text-neutral-900 transition-colors">Research Initiatives</a></li>
                 <li><a href="#contact" className="hover:text-neutral-900 transition-colors">Contact</a></li>
               </ul>
             </div>
