@@ -15,6 +15,7 @@ export const PublicationsSection: React.FC = () => {
     { label: 'All Publications', value: 'all' },
     { label: 'Journal Articles', value: 'journal' },
     { label: 'Chapters & Books', value: 'book_chapter' },
+    { label: 'Reports', value: 'report' },
     { label: 'Op-Eds', value: 'oped' },
   ];
 

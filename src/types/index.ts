@@ -34,7 +34,7 @@ export interface ResearchInterest {
   keywords: string[];
 }
 
-export type PublicationType = 'journal' | 'book_chapter' | 'oped' | 'conference' | 'preprint';
+export type PublicationType = 'journal' | 'book_chapter' | 'report' | 'oped' | 'conference' | 'preprint';
 
 export interface Publication {
   id: string;
@@ -85,8 +85,9 @@ export interface ResearchProject {
 export interface LabMember {
   id: string;
   name: string;
-  role: 'Postdoctoral Fellow' | 'Ph.D. Student' | 'Master Student' | 'Undergraduate' | 'Alumni';
+  role: string;
   topic: string;
+  coSupervisors?: string;
   photoUrl?: string;
   currentAffiliation?: string;
   websiteUrl?: string;
@@ -139,12 +140,22 @@ export interface ThemeConfig {
   accentGrayscale: string; // e.g. '#171717', '#1e293b', etc.
 }
 
+export interface ResearchFunding {
+  id: string;
+  category: 'External' | 'Internal';
+  year: string;
+  role: string;
+  title: string;
+  funder: string;
+}
+
 export interface SiteData {
   profile: Profile;
   researchInterests: ResearchInterest[];
   publications: Publication[];
   courses: Course[];
   projects: ResearchProject[];
+  researchFunding: ResearchFunding[];
   labMembers: LabMember[];
   posts: Post[];
   cvItems: CVItem[];

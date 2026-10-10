@@ -24,6 +24,7 @@ import {
   ExternalLink,
   Share2,
   Lightbulb,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 export const AdminDashboardModal: React.FC = () => {
@@ -57,6 +58,8 @@ export const AdminDashboardModal: React.FC = () => {
     resetToDefaults,
     exportDataJson,
     importDataJson,
+    activeEditingProjectId,
+    setActiveEditingProjectId,
   } = useSite();
 
   const [notification, setNotification] = useState<string | null>(null);
@@ -69,6 +72,7 @@ export const AdminDashboardModal: React.FC = () => {
   // --- Sub-states for editors ---
   // Post Editor state
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [confirmDeletePostId, setConfirmDeletePostId] = useState<string | null>(null);
   const [postForm, setPostForm] = useState<{
     title: string;
     category: PostCategory;
@@ -89,6 +93,7 @@ export const AdminDashboardModal: React.FC = () => {
 
   // Publication Editor state
   const [editingPubId, setEditingPubId] = useState<string | null>(null);
+  const [confirmDeletePubId, setConfirmDeletePubId] = useState<string | null>(null);
   const [pubForm, setPubForm] = useState<{
     title: string;
     authors: string;
@@ -142,6 +147,7 @@ export const AdminDashboardModal: React.FC = () => {
 
   // Core Research Themes Editor state
   const [editingThemeId, setEditingThemeId] = useState<string | null>(null);
+  const [confirmDeleteThemeId, setConfirmDeleteThemeId] = useState<string | null>(null);
   const [themeForm, setThemeForm] = useState<{
     title: string;
     description: string;
@@ -154,6 +160,7 @@ export const AdminDashboardModal: React.FC = () => {
 
   const handleEditTheme = (item: ResearchInterest) => {
     setEditingThemeId(item.id);
+    setConfirmDeleteThemeId(null);
     setThemeForm({
       title: item.title,
       description: item.description,
@@ -163,6 +170,7 @@ export const AdminDashboardModal: React.FC = () => {
 
   const handleCancelThemeEdit = () => {
     setEditingThemeId(null);
+    setConfirmDeleteThemeId(null);
     setThemeForm({
       title: '',
       description: '',
@@ -205,6 +213,7 @@ export const AdminDashboardModal: React.FC = () => {
 
   // Project Editor state
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [confirmDeleteProjectId, setConfirmDeleteProjectId] = useState<string | null>(null);
   const [projectForm, setProjectForm] = useState<{
     title: string;
     kicker: string;
@@ -229,8 +238,19 @@ export const AdminDashboardModal: React.FC = () => {
     externalUrl: '',
   });
 
+  // Automatically activate project editing when triggered from page
+  useEffect(() => {
+    if (activeEditingProjectId) {
+      const target = siteData.projects.find((p) => p.id === activeEditingProjectId);
+      if (target) {
+        handleEditProject(target);
+      }
+    }
+  }, [activeEditingProjectId, siteData.projects]);
+
   const handleEditProject = (proj: ResearchProject) => {
     setEditingProjectId(proj.id);
+    setConfirmDeleteProjectId(null);
     setProjectForm({
       title: proj.title,
       kicker: proj.kicker || '',
@@ -247,6 +267,8 @@ export const AdminDashboardModal: React.FC = () => {
 
   const handleCancelProjectEdit = () => {
     setEditingProjectId(null);
+    setActiveEditingProjectId(null);
+    setConfirmDeleteProjectId(null);
     setProjectForm({
       title: '',
       kicker: '',
@@ -269,11 +291,13 @@ export const AdminDashboardModal: React.FC = () => {
       updateProject(editingProjectId, projectForm);
       showNotice('Project updated successfully');
       setEditingProjectId(null);
+      setActiveEditingProjectId(null);
     } else {
       addProject(projectForm);
       showNotice('New project added successfully');
     }
 
+    setConfirmDeleteProjectId(null);
     setProjectForm({
       title: '',
       kicker: '',
@@ -288,28 +312,44 @@ export const AdminDashboardModal: React.FC = () => {
     });
   };
 
-  // Lab Member Editor state
+  const handleDeleteProjectConfirmed = (id: string) => {
+    deleteProject(id);
+    if (editingProjectId === id) {
+      handleCancelProjectEdit();
+    }
+    setConfirmDeleteProjectId(null);
+    showNotice('Project deleted successfully');
+  };
+
+  // Lab Member / PhD Research Topic Editor state
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [confirmDeleteMemberId, setConfirmDeleteMemberId] = useState<string | null>(null);
+  const [confirmDeleteCourseId, setConfirmDeleteCourseId] = useState<string | null>(null);
+  const [confirmResetDefaults, setConfirmResetDefaults] = useState<boolean>(false);
   const [memberForm, setMemberForm] = useState<{
     name: string;
-    role: 'Postdoctoral Fellow' | 'Ph.D. Student' | 'Master Student' | 'Undergraduate' | 'Alumni';
+    role: string;
     topic: string;
+    coSupervisors: string;
     websiteUrl: string;
     scholarUrl: string;
   }>({
     name: '',
-    role: 'Ph.D. Student',
+    role: 'PhD Research',
     topic: '',
+    coSupervisors: '',
     websiteUrl: '',
     scholarUrl: '',
   });
 
   const handleEditMember = (member: LabMember) => {
     setEditingMemberId(member.id);
+    setConfirmDeleteMemberId(null);
     setMemberForm({
-      name: member.name,
-      role: member.role,
-      topic: member.topic,
+      name: member.topic || member.name,
+      role: member.role || 'PhD Research',
+      topic: member.topic || member.name,
+      coSupervisors: member.coSupervisors || '',
       websiteUrl: member.websiteUrl || '',
       scholarUrl: member.scholarUrl || '',
     });
@@ -317,10 +357,12 @@ export const AdminDashboardModal: React.FC = () => {
 
   const handleCancelMemberEdit = () => {
     setEditingMemberId(null);
+    setConfirmDeleteMemberId(null);
     setMemberForm({
       name: '',
-      role: 'Ph.D. Student',
+      role: 'PhD Research',
       topic: '',
+      coSupervisors: '',
       websiteUrl: '',
       scholarUrl: '',
     });
@@ -328,21 +370,29 @@ export const AdminDashboardModal: React.FC = () => {
 
   const handleSaveMember = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!memberForm.name.trim()) return;
+    const topicText = memberForm.topic.trim() || memberForm.name.trim();
+    if (!topicText) return;
+
+    const dataToSave = {
+      ...memberForm,
+      name: topicText,
+      topic: topicText,
+    };
 
     if (editingMemberId) {
-      updateLabMember(editingMemberId, memberForm);
-      showNotice('Lab member updated successfully');
+      updateLabMember(editingMemberId, dataToSave);
+      showNotice('PhD research topic updated successfully');
       setEditingMemberId(null);
     } else {
-      addLabMember(memberForm);
-      showNotice('New member added successfully');
+      addLabMember(dataToSave);
+      showNotice('New PhD research topic added successfully');
     }
 
     setMemberForm({
       name: '',
-      role: 'Ph.D. Student',
+      role: 'PhD Research',
       topic: '',
+      coSupervisors: '',
       websiteUrl: '',
       scholarUrl: '',
     });
@@ -740,17 +790,36 @@ export const AdminDashboardModal: React.FC = () => {
                             >
                               Edit
                             </button>
-                            <button
-                              onClick={() => {
-                                if (confirm(`Delete post "${post.title}"?`)) {
-                                  deletePost(post.id);
-                                  showNotice('Post deleted');
-                                }
-                              }}
-                              className="text-red-600 hover:text-red-800 underline"
-                            >
-                              Delete
-                            </button>
+                            {confirmDeletePostId === post.id ? (
+                              <span className="inline-flex items-center gap-1.5 p-1 bg-red-50 border border-red-200 rounded">
+                                <span className="text-[11px] font-dm text-red-700 font-medium">Delete?</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    deletePost(post.id);
+                                    setConfirmDeletePostId(null);
+                                    showNotice('Post deleted');
+                                  }}
+                                  className="px-1.5 py-0.5 text-[11px] font-dm font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmDeletePostId(null)}
+                                  className="px-1.5 py-0.5 text-[11px] font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                                >
+                                  No
+                                </button>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmDeletePostId(post.id)}
+                                className="text-red-600 hover:text-red-800 underline"
+                              >
+                                Delete
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -858,6 +927,7 @@ export const AdminDashboardModal: React.FC = () => {
                     >
                       <option value="journal">Journal Article</option>
                       <option value="book_chapter">Book Chapter / Monograph</option>
+                      <option value="report">Policy & Research Report</option>
                       <option value="oped">Op-ed / Public Commentary</option>
                     </select>
                   </div>
@@ -953,17 +1023,36 @@ export const AdminDashboardModal: React.FC = () => {
                         >
                           Edit
                         </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Delete publication "${pub.title}"?`)) {
-                              deletePublication(pub.id);
-                              showNotice('Publication deleted');
-                            }
-                          }}
-                          className="text-xs text-red-600 hover:text-red-800 underline"
-                        >
-                          Delete
-                        </button>
+                        {confirmDeletePubId === pub.id ? (
+                          <div className="inline-flex items-center gap-1.5 p-1 bg-red-50 border border-red-200 rounded">
+                            <span className="text-[11px] font-dm text-red-700 font-medium">Delete?</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                deletePublication(pub.id);
+                                setConfirmDeletePubId(null);
+                                showNotice('Publication deleted');
+                              }}
+                              className="px-2 py-0.5 text-[11px] font-dm font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeletePubId(null)}
+                              className="px-2 py-0.5 text-[11px] font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeletePubId(pub.id)}
+                            className="text-xs text-red-600 hover:text-red-800 underline"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1159,6 +1248,23 @@ export const AdminDashboardModal: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Hero Lead Introduction */}
+                <div className="space-y-1">
+                  <label className="text-xs font-dm font-medium text-neutral-700 block">
+                    Introduction Lead Paragraph (상단 메인 소개글 - Hero Bio Lead)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={profileForm.bioLead || ''}
+                    onChange={(e) => setProfileForm({ ...profileForm, bioLead: e.target.value })}
+                    placeholder="Enter your introductory bio paragraph displayed prominently at the top of the homepage..."
+                    className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none leading-relaxed"
+                  />
+                  <span className="text-[11px] text-neutral-500 block">
+                    홈페이지 최상단(Hero) 이름 바로 아래에 굵직하게 표시되는 핵심 연구 및 소개 문장입니다. 원하는 문구로 자유롭게 직접 수정하실 수 있습니다.
+                  </span>
+                </div>
+
                 {/* Full Biography Paragraphs */}
                 <div className="space-y-1">
                   <label className="text-xs font-dm font-medium text-neutral-700 block">
@@ -1308,6 +1414,40 @@ export const AdminDashboardModal: React.FC = () => {
                       Cancel
                     </button>
                   )}
+                  {editingThemeId && (
+                    confirmDeleteThemeId === editingThemeId ? (
+                      <div className="ml-auto inline-flex items-center gap-2 p-1.5 bg-red-50 border border-red-200 rounded">
+                        <span className="text-xs font-dm text-red-700 font-medium px-1">Really delete theme?</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            deleteResearchInterest(editingThemeId);
+                            handleCancelThemeEdit();
+                            showNotice('Research theme deleted');
+                          }}
+                          className="px-2.5 py-1 text-xs font-dm font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                        >
+                          Yes, Delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteThemeId(null)}
+                          className="px-2 py-1 text-xs font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteThemeId(editingThemeId)}
+                        className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete This Theme</span>
+                      </button>
+                    )
+                  )}
                 </div>
               </form>
 
@@ -1358,22 +1498,42 @@ export const AdminDashboardModal: React.FC = () => {
                           <Edit2 className="w-3 h-3" />
                           <span>Edit</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (confirm(`Delete theme "${item.title}"?`)) {
-                              deleteResearchInterest(item.id);
-                              if (editingThemeId === item.id) {
-                                handleCancelThemeEdit();
-                              }
-                              showNotice('Research theme deleted');
-                            }
-                          }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          <span>Delete</span>
-                        </button>
+                        {confirmDeleteThemeId === item.id ? (
+                          <div className="inline-flex items-center gap-1.5 p-1 bg-red-50 border border-red-200 rounded">
+                            <span className="text-[11px] font-dm text-red-700 font-medium px-1">Delete?</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                deleteResearchInterest(item.id);
+                                if (editingThemeId === item.id) {
+                                  handleCancelThemeEdit();
+                                }
+                                setConfirmDeleteThemeId(null);
+                                showNotice('Research theme deleted');
+                              }}
+                              className="px-2 py-1 text-[11px] font-dm font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteThemeId(null)}
+                              className="px-2 py-1 text-[11px] font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteThemeId(item.id)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                            title="Delete this theme"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1405,17 +1565,36 @@ export const AdminDashboardModal: React.FC = () => {
                   <div key={course.id} className="p-4 border border-neutral-200 rounded-md bg-neutral-50 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-sm font-dm text-neutral-900">{course.code}: {course.title}</span>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Remove course ${course.code}?`)) {
-                            deleteCourse(course.id);
-                            showNotice('Course deleted');
-                          }
-                        }}
-                        className="text-xs text-red-600 hover:underline"
-                      >
-                        Remove
-                      </button>
+                      {confirmDeleteCourseId === course.id ? (
+                        <div className="inline-flex items-center gap-1.5 p-1 bg-red-50 border border-red-200 rounded">
+                          <span className="text-[11px] font-dm text-red-700 font-medium">Remove course?</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              deleteCourse(course.id);
+                              setConfirmDeleteCourseId(null);
+                              showNotice('Course deleted');
+                            }}
+                            className="px-2 py-0.5 text-[11px] font-dm font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteCourseId(null)}
+                            className="px-2 py-0.5 text-[11px] font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteCourseId(course.id)}
+                          className="text-xs text-red-600 hover:underline"
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs font-dm text-neutral-600">
                       <div>Term: {course.term}</div>
@@ -1457,7 +1636,7 @@ export const AdminDashboardModal: React.FC = () => {
                   )}
                 </div>
 
-                <form onSubmit={handleSaveProject} className="p-5 bg-neutral-50 border border-neutral-200 rounded-md space-y-4">
+                <form id="project-edit-form" onSubmit={handleSaveProject} className="p-5 bg-neutral-50 border border-neutral-200 rounded-md space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1 md:col-span-2">
                       <label className="text-xs font-dm font-medium text-neutral-700 block">Project Title *</label>
@@ -1469,6 +1648,106 @@ export const AdminDashboardModal: React.FC = () => {
                         placeholder="e.g. Cognitive-State Driven Mixed-Initiative Decision Frameworks"
                         className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
                       />
+                    </div>
+
+                    {/* Project Image & Photo Management */}
+                    <div className="md:col-span-2 space-y-2 p-3 bg-white border border-neutral-200 rounded-md">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-dm font-semibold text-neutral-800 block">
+                          Project Photo / Visual (프로젝트 사진)
+                        </label>
+                        {projectForm.imageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProjectForm((prev) => ({ ...prev, imageUrl: '' }));
+                              showNotice('Project photo deleted / removed');
+                            }}
+                            className="inline-flex items-center gap-1 text-xs font-dm text-red-600 hover:text-red-700 font-medium underline"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete Photo (사진 삭제)</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                        {/* Image Preview Box */}
+                        <div className="sm:col-span-4 aspect-[16/9] bg-neutral-100 border border-neutral-200 rounded overflow-hidden flex items-center justify-center relative">
+                          {projectForm.imageUrl ? (
+                            <img
+                              src={projectForm.imageUrl}
+                              alt="Project visual preview"
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="text-center p-2 text-neutral-400 text-xs">
+                              <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                              <span>No photo assigned</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Controls */}
+                        <div className="sm:col-span-8 space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-dm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 rounded cursor-pointer transition-colors">
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>Upload Photo File</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    try {
+                                      const compressed = await compressImageFile(file, 900, 0.8);
+                                      setProjectForm((prev) => ({ ...prev, imageUrl: compressed }));
+                                      showNotice('Project photo uploaded & optimized');
+                                    } catch (err) {
+                                      const reader = new FileReader();
+                                      reader.onload = () => {
+                                        if (typeof reader.result === 'string') {
+                                          setProjectForm((prev) => ({ ...prev, imageUrl: reader.result as string }));
+                                          showNotice('Project photo uploaded');
+                                        }
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }
+                                }}
+                              />
+                            </label>
+                            {projectForm.imageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setProjectForm((prev) => ({ ...prev, imageUrl: '' }));
+                                  showNotice('Project photo cleared');
+                                }}
+                                className="px-2.5 py-1.5 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                              >
+                                Clear Photo
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[11px] font-dm text-neutral-500 block">
+                              Or paste direct image URL or relative path:
+                            </span>
+                            <input
+                              type="text"
+                              value={projectForm.imageUrl}
+                              onChange={(e) => setProjectForm({ ...projectForm, imageUrl: e.target.value })}
+                              placeholder="e.g. https://... or /src/assets/images/..."
+                              className="w-full px-3 py-1.5 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="space-y-1">
@@ -1538,22 +1817,57 @@ export const AdminDashboardModal: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2">
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-dm font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded transition-colors"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span>{editingProjectId ? 'Update Project' : 'Add Project'}</span>
-                    </button>
-                    {editingProjectId && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-200">
+                    <div className="flex items-center gap-2">
                       <button
-                        type="button"
-                        onClick={handleCancelProjectEdit}
-                        className="px-3 py-2 text-xs font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                        type="submit"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-dm font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded transition-colors"
                       >
-                        Cancel
+                        <Save className="w-3.5 h-3.5" />
+                        <span>{editingProjectId ? 'Update Project' : 'Add Project'}</span>
                       </button>
+                      {editingProjectId && (
+                        <button
+                          type="button"
+                          onClick={handleCancelProjectEdit}
+                          className="px-3 py-2 text-xs font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+
+                    {editingProjectId && (
+                      <div className="flex items-center gap-2">
+                        {confirmDeleteProjectId === editingProjectId ? (
+                          <div className="flex items-center gap-1.5 bg-red-50 p-1.5 rounded border border-red-200">
+                            <span className="text-xs font-dm text-red-700 font-medium">Delete this project?</span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProjectConfirmed(editingProjectId)}
+                              className="px-2.5 py-1 text-xs font-dm font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                            >
+                              Yes, Delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteProjectId(null)}
+                              className="px-2 py-1 text-xs font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteProjectId(editingProjectId)}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Project</span>
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </form>
@@ -1566,42 +1880,77 @@ export const AdminDashboardModal: React.FC = () => {
                   <div className="divide-y divide-neutral-200 border border-neutral-200 rounded-md">
                     {siteData.projects.map((proj) => (
                       <div key={proj.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-neutral-50">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <strong className="text-neutral-900 text-sm font-dm">{proj.title}</strong>
-                            {proj.kicker && (
-                              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-neutral-100 text-neutral-600 rounded">
-                                {proj.kicker}
-                              </span>
+                        <div className="flex items-start sm:items-center gap-3">
+                          {/* Image thumbnail preview */}
+                          <div className="w-16 h-12 shrink-0 bg-neutral-100 rounded border border-neutral-200 overflow-hidden flex items-center justify-center">
+                            {proj.imageUrl ? (
+                              <img
+                                src={proj.imageUrl}
+                                alt={proj.title}
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <ImageIcon className="w-4 h-4 text-neutral-400" />
                             )}
                           </div>
-                          <p className="text-xs font-dm text-neutral-500 line-clamp-1">{proj.summary || proj.fullDescription}</p>
-                          <div className="text-[11px] font-dm text-neutral-400">
-                            {proj.funding} {proj.timeframe && `· ${proj.timeframe}`}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <strong className="text-neutral-900 text-sm font-dm">{proj.title}</strong>
+                              {proj.kicker && (
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 bg-neutral-100 text-neutral-600 rounded">
+                                  {proj.kicker}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs font-dm text-neutral-500 line-clamp-1">{proj.summary || proj.fullDescription}</p>
+                            <div className="text-[11px] font-dm text-neutral-400">
+                              {proj.funding} {proj.timeframe && `· ${proj.timeframe}`}
+                              {proj.imageUrl ? ' · [Photo attached]' : ' · [No photo]'}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleEditProject(proj)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-dm text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded transition-colors"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                            <span>Edit</span>
-                          </button>
+
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                           <button
                             type="button"
                             onClick={() => {
-                              if (confirm(`Remove project "${proj.title}"?`)) {
-                                deleteProject(proj.id);
-                                showNotice('Project removed');
-                              }
+                              handleEditProject(proj);
+                              const formEl = document.getElementById('project-edit-form');
+                              formEl?.scrollIntoView({ behavior: 'smooth' });
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-dm text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded transition-colors"
                           >
-                            <Trash2 className="w-3 h-3" />
-                            <span>Delete</span>
+                            <Edit2 className="w-3 h-3" />
+                            <span>Edit / Photo</span>
                           </button>
+                          {confirmDeleteProjectId === proj.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteProjectConfirmed(proj.id)}
+                                className="px-2.5 py-1.5 text-xs font-dm font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                              >
+                                Confirm Delete
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteProjectId(null)}
+                                className="px-2 py-1.5 text-xs font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteProjectId(proj.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Delete</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1609,11 +1958,11 @@ export const AdminDashboardModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* SECTION B: LAB MEMBERS & ADVISEES */}
+              {/* SECTION B: PHD RESEARCH TOPICS & SUPERVISION */}
               <div className="space-y-6 pt-6 border-t border-neutral-200">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-dm uppercase tracking-wider font-semibold text-neutral-900">
-                    {editingMemberId ? 'Edit Team Member' : 'Add Team Member / Advisee'}
+                    {editingMemberId ? 'Edit PhD Research Topic' : 'Add PhD Research Topic'}
                   </h4>
                   {editingMemberId && (
                     <button
@@ -1626,54 +1975,41 @@ export const AdminDashboardModal: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleSaveMember} className="p-5 bg-neutral-50 border border-neutral-200 rounded-md space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-3">
                     <div className="space-y-1">
-                      <label className="text-xs font-dm font-medium text-neutral-700 block">Full Name *</label>
+                      <label className="text-xs font-dm font-medium text-neutral-700 block">Research Topic Title *</label>
                       <input
                         type="text"
                         required
-                        value={memberForm.name}
-                        onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
-                        placeholder="e.g. Sarah Chen"
-                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-dm font-medium text-neutral-700 block">Role *</label>
-                      <select
-                        value={memberForm.role}
-                        onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value as any })}
-                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
-                      >
-                        <option value="Ph.D. Student">Ph.D. Student</option>
-                        <option value="Postdoctoral Fellow">Postdoctoral Fellow</option>
-                        <option value="Master Student">Master Student</option>
-                        <option value="Undergraduate">Undergraduate</option>
-                        <option value="Alumni">Alumni</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-dm font-medium text-neutral-700 block">Personal Website URL</label>
-                      <input
-                        type="url"
-                        value={memberForm.websiteUrl}
-                        onChange={(e) => setMemberForm({ ...memberForm, websiteUrl: e.target.value })}
-                        placeholder="https://..."
-                        className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1 md:col-span-3">
-                      <label className="text-xs font-dm font-medium text-neutral-700 block">Research Topic / Focus</label>
-                      <input
-                        type="text"
                         value={memberForm.topic}
-                        onChange={(e) => setMemberForm({ ...memberForm, topic: e.target.value })}
-                        placeholder="e.g. Mixed-Initiative Human-LLM Interaction & Mental Model Alignment"
+                        onChange={(e) => setMemberForm({ ...memberForm, topic: e.target.value, name: e.target.value })}
+                        placeholder="e.g. The experience of women with refugee backgrounds accessing domestic and family violence support"
                         className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
                       />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-dm font-medium text-neutral-700 block">Co-supervisors</label>
+                        <input
+                          type="text"
+                          value={memberForm.coSupervisors}
+                          onChange={(e) => setMemberForm({ ...memberForm, coSupervisors: e.target.value })}
+                          placeholder="e.g. Dr Kathryn Benier and Dr Sara Niner"
+                          className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-dm font-medium text-neutral-700 block">Category / Degree</label>
+                        <input
+                          type="text"
+                          value={memberForm.role}
+                          onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
+                          placeholder="e.g. PhD Research"
+                          className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1683,7 +2019,7 @@ export const AdminDashboardModal: React.FC = () => {
                       className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-dm font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded transition-colors"
                     >
                       <Save className="w-3.5 h-3.5" />
-                      <span>{editingMemberId ? 'Update Member' : 'Add Member'}</span>
+                      <span>{editingMemberId ? 'Update Topic' : 'Add Topic'}</span>
                     </button>
                     {editingMemberId && (
                       <button
@@ -1694,31 +2030,59 @@ export const AdminDashboardModal: React.FC = () => {
                         Cancel
                       </button>
                     )}
+                    {editingMemberId && (
+                      confirmDeleteMemberId === editingMemberId ? (
+                        <div className="ml-auto inline-flex items-center gap-2 p-1 bg-red-50 border border-red-200 rounded">
+                          <span className="text-xs font-dm text-red-700 font-medium px-1">Remove topic?</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              deleteLabMember(editingMemberId);
+                              handleCancelMemberEdit();
+                              showNotice('Topic removed');
+                            }}
+                            className="px-2.5 py-1 text-xs font-dm font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                          >
+                            Yes, Remove
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteMemberId(null)}
+                            className="px-2 py-1 text-xs font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteMemberId(editingMemberId)}
+                          className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Remove Topic</span>
+                        </button>
+                      )
+                    )}
                   </div>
                 </form>
 
-                {/* Existing Members List */}
+                {/* Existing Topics List */}
                 <div className="space-y-3">
                   <h5 className="text-xs font-dm uppercase font-semibold text-neutral-700">
-                    Advisees & Personnel ({siteData.labMembers.length})
+                    PhD Research Topics ({siteData.labMembers.length})
                   </h5>
                   <div className="divide-y divide-neutral-200 border border-neutral-200 rounded-md">
                     {siteData.labMembers.map((member) => (
-                      <div key={member.id} className="p-3.5 flex items-center justify-between text-xs font-dm hover:bg-neutral-50">
-                        <div>
-                          <strong className="text-neutral-900">{member.name}</strong>{' '}
-                          <span className="text-neutral-500 font-normal">({member.role})</span>
-                          <div className="text-neutral-600 text-[11px] mt-0.5">{member.topic}</div>
-                          {member.websiteUrl && (
-                            <a
-                              href={member.websiteUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-neutral-400 hover:text-neutral-700 underline text-[11px]"
-                            >
-                              {member.websiteUrl}
-                            </a>
+                      <div key={member.id} className="p-3.5 flex items-start justify-between gap-4 text-xs font-dm hover:bg-neutral-50">
+                        <div className="space-y-1">
+                          <strong className="text-neutral-900 block leading-snug">{member.topic || member.name}</strong>
+                          {member.coSupervisors && (
+                            <div className="text-neutral-500 text-[11px]">
+                              Co-supervisors: <span className="text-neutral-700 font-medium">{member.coSupervisors}</span>
+                            </div>
                           )}
+                          <div className="text-neutral-400 text-[10px] uppercase font-mono">{member.role || 'PhD Research'}</div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <button
@@ -1729,19 +2093,41 @@ export const AdminDashboardModal: React.FC = () => {
                             <Edit2 className="w-3 h-3" />
                             <span>Edit</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (confirm(`Remove ${member.name}?`)) {
-                                deleteLabMember(member.id);
-                                showNotice('Member removed');
-                              }
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            <span>Remove</span>
-                          </button>
+                          {confirmDeleteMemberId === member.id ? (
+                            <div className="inline-flex items-center gap-1.5 p-1 bg-red-50 border border-red-200 rounded">
+                              <span className="text-[11px] font-dm text-red-700 font-medium px-1">Remove?</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  deleteLabMember(member.id);
+                                  if (editingMemberId === member.id) {
+                                    handleCancelMemberEdit();
+                                  }
+                                  setConfirmDeleteMemberId(null);
+                                  showNotice('Topic removed');
+                                }}
+                                className="px-2 py-0.5 text-[11px] font-dm font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteMemberId(null)}
+                                className="px-2 py-0.5 text-[11px] font-dm text-neutral-600 bg-neutral-200 hover:bg-neutral-300 rounded transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteMemberId(member.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-dm text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Remove</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -2066,19 +2452,42 @@ export const AdminDashboardModal: React.FC = () => {
                 <p className="text-xs font-dm text-red-700 leading-relaxed">
                   Revert all posts, publications, lab members, and theme options back to the rich default sample data for Prof. Hyein Ellen Cho.
                 </p>
-                <button
-                  onClick={() => {
-                    if (confirm('Are you sure you want to restore default sample content? All custom edits will be reset.')) {
-                      resetToDefaults();
-                      showNotice('Restored to default rich sample content');
-                      setIsAdminOpen(false);
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-dm font-medium text-red-700 bg-white border border-red-300 rounded hover:bg-red-50 transition-colors"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset All to Default Sample Data</span>
-                </button>
+                {confirmResetDefaults ? (
+                  <div className="p-3 bg-red-100 border border-red-300 rounded space-y-2">
+                    <p className="text-xs font-dm text-red-900 font-medium">
+                      Are you sure? All custom edits will be reset to default sample data.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          resetToDefaults();
+                          setConfirmResetDefaults(false);
+                          showNotice('Restored to default rich sample content');
+                          setIsAdminOpen(false);
+                        }}
+                        className="px-3 py-1.5 text-xs font-dm font-semibold text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                      >
+                        Yes, Reset Everything
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmResetDefaults(false)}
+                        className="px-3 py-1.5 text-xs font-dm text-neutral-700 bg-white border border-neutral-300 hover:bg-neutral-100 rounded transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmResetDefaults(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-dm font-medium text-red-700 bg-white border border-red-300 rounded hover:bg-red-50 transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset All to Default Sample Data</span>
+                  </button>
+                )}
               </div>
             </div>
           )}

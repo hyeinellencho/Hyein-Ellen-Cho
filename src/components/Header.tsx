@@ -9,7 +9,7 @@ export const Header: React.FC = () => {
   const navLinks = [
     { label: 'About', href: '#about' },
     { label: 'Publications', href: '#publications' },
-    { label: 'Research Projects', href: '#lab' },
+    { label: 'Research Funding', href: '#lab' },
     { label: 'Contact', href: '#contact' },
   ];
 

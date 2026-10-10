@@ -6,6 +6,7 @@ import {
   Publication,
   Course,
   ResearchProject,
+  ResearchFunding,
   LabMember,
   Post,
   ThemeConfig,
@@ -32,6 +33,9 @@ interface SiteContextType {
   addProject: (proj: Omit<ResearchProject, 'id'>) => void;
   updateProject: (id: string, proj: Partial<ResearchProject>) => void;
   deleteProject: (id: string) => void;
+  addResearchFunding: (funding: Omit<ResearchFunding, 'id'>) => void;
+  updateResearchFunding: (id: string, partial: Partial<ResearchFunding>) => void;
+  deleteResearchFunding: (id: string) => void;
   addLabMember: (member: Omit<LabMember, 'id'>) => void;
   updateLabMember: (id: string, member: Partial<LabMember>) => void;
   deleteLabMember: (id: string) => void;
@@ -50,10 +54,17 @@ interface SiteContextType {
   setActivePost: (post: Post | null) => void;
   activeBibtexPub: Publication | null;
   setActiveBibtexPub: (pub: Publication | null) => void;
+  activeEditingProjectId: string | null;
+  setActiveEditingProjectId: (id: string | null) => void;
+  openProjectEditor: (projectId?: string) => void;
+  activeEditingFundingId: string | null;
+  setActiveEditingFundingId: (id: string | null) => void;
+  openFundingEditor: (fundingId?: string) => void;
 }
 
-const STORAGE_KEY = 'hyein_academic_website_data_v7';
+const STORAGE_KEY = 'hyein_academic_website_data_v8';
 const OBSOLETE_KEYS = [
+  'hyein_academic_website_data_v7',
   'hyein_academic_website_data_v6',
   'hyein_academic_website_data_v5',
   'hyein_academic_website_data_v4',
@@ -95,19 +106,35 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (mergedProfile.institution && mergedProfile.institution.includes('Stanford')) {
           mergedProfile.institution = 'Monash University';
           mergedProfile.institutionUrl = 'https://www.monash.edu';
-          mergedProfile.office = 'Woodside Building for Technology & Design, Clayton Campus';
-          mergedProfile.address = 'Wellington Road, Clayton VIC 3800, Melbourne, Australia';
-          mergedProfile.email = 'hyein.cho@monash.edu';
+        }
+        if (
+          !mergedProfile.title ||
+          mergedProfile.title.includes('Computer Science')
+        ) {
+          mergedProfile.title = initialSiteData.profile.title;
         }
         if (
           !mergedProfile.department ||
-          mergedProfile.department.toLowerCase().includes('information technology')
+          mergedProfile.department.toLowerCase().includes('information technology') ||
+          mergedProfile.department.toLowerCase().includes('computer science')
         ) {
-          mergedProfile.department = 'Department of Computer Science';
+          mergedProfile.department = initialSiteData.profile.department;
+        }
+        if (
+          !mergedProfile.office ||
+          mergedProfile.office.includes('Woodside Building')
+        ) {
+          mergedProfile.office = initialSiteData.profile.office;
+        }
+        if (mergedProfile.email === 'hyein.cho@monash.edu') {
+          mergedProfile.email = 'Ellen.Cho@monash.edu';
         }
         // Remove academic notice ribbon & office hours per user request
         mergedProfile.statusBadge = '';
         mergedProfile.officeHours = '';
+        if (mergedProfile.pronouns === 'she/her') {
+          mergedProfile.pronouns = '';
+        }
 
         if (!mergedProfile.primaryInterests || mergedProfile.primaryInterests.length === 0) {
           mergedProfile.primaryInterests = initialSiteData.profile.primaryInterests;
@@ -139,32 +166,88 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         mergedSeo.googleScholarId = 'laKlDswAAAAJ';
         mergedSeo.linkedinUrl = 'https://www.linkedin.com/in/hyein-ellen-cho/';
         mergedSeo.dblpUrl = 'https://www.linkedin.com/in/hyein-ellen-cho/';
-        if (!mergedSeo.orcidId || mergedSeo.orcidId === '0000-0002-1825-0097') {
-          mergedSeo.orcidId = '0000-0001-5752-5797';
-        }
+        mergedSeo.orcidId = '0000-0001-5752-5797';
 
-        // Migrate publications: sync with authentic Google Scholar publications
-        const hasGoogleScholarData =
+        // Migrate publications: sync with authentic ORCID & Google Scholar verified list
+        const hasVerifiedOrcidData =
           Array.isArray(parsed.publications) &&
-          parsed.publications.some((p: Publication) => p.id && p.id.startsWith('pub-scholar-'));
+          parsed.publications.some((p: Publication) => p.id && p.id.startsWith('pub-orcid-'));
 
         let mergedPublications: Publication[];
-        if (!hasGoogleScholarData) {
+        if (!hasVerifiedOrcidData) {
           mergedPublications = initialSiteData.publications;
         } else {
+          // Filter out deleted monograph and dissertation per user request
           mergedPublications = parsed.publications.filter(
-            (p: Publication) => p.type !== 'conference' && p.type !== 'preprint'
+            (p: Publication) =>
+              p.id !== 'pub-scholar-monograph' &&
+              p.id !== 'pub-dissertation-2022' &&
+              !p.title.includes('Gender, migration and family violence in Australia: The transnational experiences') &&
+              !p.title.includes('An intersectional approach to lived experiences of domestic and family violence within the Korean Diaspora')
           );
+
+          // Clear removed awards (TASA award, Dean's Commendation) per user request
+          mergedPublications = mergedPublications.map((p: Publication) => {
+            let item = { ...p };
+            if (
+              item.award &&
+              (item.award.includes('TASA') ||
+                item.award.includes("Dean's Commendation") ||
+                item.award.includes('Research Monograph Under Contract'))
+            ) {
+              const { award: _removed, ...rest } = item;
+              item = rest as Publication;
+            }
+            if (item.id === 'pub-report-2024') {
+              item.type = 'report';
+            }
+            return item;
+          });
+
+          // Ensure authentic research reports from initialSiteData are present
+          const existingIds = new Set(mergedPublications.map((p) => p.id));
+          const missingReports = initialSiteData.publications.filter(
+            (p) => p.type === 'report' && !existingIds.has(p.id)
+          );
+          if (missingReports.length > 0) {
+            mergedPublications = [...mergedPublications, ...missingReports];
+          }
         }
 
-        return {
-          ...initialSiteData,
-          ...parsed,
-          publications: mergedPublications,
-          profile: mergedProfile,
-          theme: { ...initialSiteData.theme, ...(parsed.theme || {}) },
-          seo: mergedSeo,
-        };
+          // Ensure authentic PhD research topics are used instead of student placeholders
+          const hasPlaceholderLabMembers =
+            !Array.isArray(parsed.labMembers) ||
+            parsed.labMembers.some(
+              (m: LabMember) =>
+                m.name === 'Sarah Chen' ||
+                m.name === 'Dr. David K. Park' ||
+                m.name === 'Elena Rostova' ||
+                m.id === 'mem-1' ||
+                m.id === 'mem-2'
+            ) ||
+            !parsed.labMembers.some((m: LabMember) =>
+              (m.topic || m.name || '').includes('refugee backgrounds')
+            );
+
+          const mergedLabMembers = hasPlaceholderLabMembers
+            ? initialSiteData.labMembers
+            : parsed.labMembers;
+
+          const mergedResearchFunding =
+            Array.isArray(parsed.researchFunding) && parsed.researchFunding.length > 0
+              ? parsed.researchFunding
+              : initialSiteData.researchFunding;
+
+          return {
+            ...initialSiteData,
+            ...parsed,
+            publications: mergedPublications,
+            labMembers: mergedLabMembers,
+            researchFunding: mergedResearchFunding,
+            profile: mergedProfile,
+            theme: { ...initialSiteData.theme, ...(parsed.theme || {}) },
+            seo: mergedSeo,
+          };
       }
     } catch (e) {
       console.warn('Failed to parse saved site data from localStorage:', e);
@@ -177,6 +260,20 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isQuickEditActive, setIsQuickEditActive] = useState(false);
   const [activePost, setActivePost] = useState<Post | null>(null);
   const [activeBibtexPub, setActiveBibtexPub] = useState<Publication | null>(null);
+  const [activeEditingProjectId, setActiveEditingProjectId] = useState<string | null>(null);
+  const [activeEditingFundingId, setActiveEditingFundingId] = useState<string | null>(null);
+
+  const openProjectEditor = (projectId?: string) => {
+    setAdminTab('lab');
+    setActiveEditingProjectId(projectId || null);
+    setIsAdminOpen(true);
+  };
+
+  const openFundingEditor = (fundingId?: string) => {
+    setAdminTab('lab');
+    setActiveEditingFundingId(fundingId || null);
+    setIsAdminOpen(true);
+  };
 
   // Sync to localStorage with robust quota handling and safety fallback
   useEffect(() => {
@@ -354,6 +451,33 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   };
 
+  const addResearchFunding = (funding: Omit<ResearchFunding, 'id'>) => {
+    const newFunding: ResearchFunding = {
+      ...funding,
+      id: `fund-${Date.now()}`,
+    };
+    setSiteData((prev) => ({
+      ...prev,
+      researchFunding: [newFunding, ...(prev.researchFunding || [])],
+    }));
+  };
+
+  const updateResearchFunding = (id: string, partial: Partial<ResearchFunding>) => {
+    setSiteData((prev) => ({
+      ...prev,
+      researchFunding: (prev.researchFunding || []).map((f) =>
+        f.id === id ? { ...f, ...partial } : f
+      ),
+    }));
+  };
+
+  const deleteResearchFunding = (id: string) => {
+    setSiteData((prev) => ({
+      ...prev,
+      researchFunding: (prev.researchFunding || []).filter((f) => f.id !== id),
+    }));
+  };
+
   const addLabMember = (member: Omit<LabMember, 'id'>) => {
     const newMember: LabMember = {
       ...member,
@@ -433,9 +557,12 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addCourse,
         updateCourse,
         deleteCourse,
-        addProject,
+         addProject,
         updateProject,
         deleteProject,
+        addResearchFunding,
+        updateResearchFunding,
+        deleteResearchFunding,
         addLabMember,
         updateLabMember,
         deleteLabMember,
@@ -454,6 +581,12 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setActivePost,
         activeBibtexPub,
         setActiveBibtexPub,
+        activeEditingProjectId,
+        setActiveEditingProjectId,
+        openProjectEditor,
+        activeEditingFundingId,
+        setActiveEditingFundingId,
+        openFundingEditor,
       }}
     >
       {children}

@@ -46,13 +46,16 @@ export const Hero: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           {/* Left Column: Typographic Hierarchy */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Unboxed Kicker Metadata */}
             <div className="flex flex-wrap items-center gap-2 text-xs font-dm tracking-wider uppercase text-neutral-500">
               <span>{profile.institution}</span>
               <span aria-hidden="true">·</span>
               <span>{profile.department.split('&')[0]}</span>
-              <span aria-hidden="true">·</span>
-              <span className="text-neutral-700 font-medium">{profile.pronouns}</span>
+              {profile.pronouns && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="text-neutral-700 font-medium">{profile.pronouns}</span>
+                </>
+              )}
             </div>
 
             {/* Headline & Professorship */}
@@ -69,9 +72,21 @@ export const Hero: React.FC = () => {
             </div>
 
             {/* Lead Narrative */}
-            <p className="text-base font-dm text-neutral-700 leading-relaxed max-w-2xl">
-              {profile.bioLead}
-            </p>
+            <div className="group relative">
+              <p className="text-base font-dm text-neutral-700 leading-relaxed max-w-2xl">
+                {profile.bioLead}
+              </p>
+              <button
+                onClick={() => {
+                  setAdminTab('profile');
+                  setIsAdminOpen(true);
+                }}
+                className="mt-1 text-[11px] font-dm text-neutral-400 hover:text-neutral-800 underline inline-flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity"
+                title="Edit introduction / bio lead text"
+              >
+                Edit Introduction
+              </button>
+            </div>
 
             {/* Research Focus - Clean Unboxed Discipline (No Pills!) */}
             <div className="pt-1">
@@ -121,7 +136,7 @@ export const Hero: React.FC = () => {
                 href="#lab"
                 className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-dm font-medium text-neutral-800 bg-neutral-100 hover:bg-neutral-200 border border-neutral-300/80 rounded transition-colors whitespace-nowrap"
               >
-                <span>Research Initiatives</span>
+                <span>Research Funding</span>
               </a>
 
               <a

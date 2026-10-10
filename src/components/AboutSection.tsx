@@ -109,10 +109,23 @@ export const AboutSection: React.FC = () => {
                       <div className="p-1.5 bg-neutral-100 rounded text-neutral-700 shrink-0 group-hover:bg-neutral-900 group-hover:text-white transition-colors">
                         <IconComponent className="w-4 h-4" />
                       </div>
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-dm font-medium text-neutral-900 leading-snug">
-                          {interest.title}
-                        </h4>
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-dm font-medium text-neutral-900 leading-snug">
+                            {interest.title}
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdminTab('research');
+                              setIsAdminOpen(true);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-neutral-400 hover:text-neutral-900 p-0.5 rounded hover:bg-neutral-100"
+                            title="Customize Core Research Themes"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                         <p className="text-xs font-dm text-neutral-600 leading-relaxed">
                           {interest.description}
                         </p>

@@ -135,7 +135,7 @@ export const ContactSection: React.FC = () => {
                   <MapPin className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-neutral-900 block">{profile.institution}</strong>
-                    <span>{profile.office}</span>
+                    {profile.office && <span className="block">{profile.office}</span>}
                     {profile.address && !profile.address.includes('Wellington Road') && (
                       <span className="block text-neutral-500">{profile.address}</span>
                     )}

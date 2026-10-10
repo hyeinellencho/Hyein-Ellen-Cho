@@ -61,7 +61,7 @@ export const AdminQuickBar: React.FC = () => {
             }}
             className="px-2 py-1 hover:bg-neutral-800 rounded text-neutral-200 hover:text-white transition-colors"
           >
-            Research Initiatives
+            Research Funding
           </button>
 
           <button
