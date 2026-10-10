@@ -1925,7 +1925,7 @@ export const AdminDashboardModal: React.FC = () => {
                       type="text"
                       value={seoForm.orcidId}
                       onChange={(e) => setSeoForm({ ...seoForm, orcidId: e.target.value })}
-                      placeholder="0000-0002-1825-0097"
+                      placeholder="0000-0001-5752-5797"
                       className="w-full px-3 py-2 text-xs font-dm bg-white border border-neutral-200 rounded focus:border-neutral-500 focus:outline-none"
                     />
                   </div>

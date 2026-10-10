@@ -586,7 +586,7 @@ export const initialSiteData: SiteData = {
     googleScholarId: 'laKlDswAAAAJ',
     googleScholarUrl:
       'https://scholar.google.com/citations?hl=en&user=laKlDswAAAAJ&view_op=list_works&sortby=pubdate',
-    orcidId: '0000-0002-1825-0097',
+    orcidId: '0000-0001-5752-5797',
     arxivAuthorId: 'cho_h_1',
     githubUrl: 'https://github.com',
     linkedinUrl: 'https://www.linkedin.com/in/hyein-ellen-cho/',

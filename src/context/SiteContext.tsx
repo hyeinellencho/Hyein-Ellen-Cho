@@ -139,6 +139,9 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         mergedSeo.googleScholarId = 'laKlDswAAAAJ';
         mergedSeo.linkedinUrl = 'https://www.linkedin.com/in/hyein-ellen-cho/';
         mergedSeo.dblpUrl = 'https://www.linkedin.com/in/hyein-ellen-cho/';
+        if (!mergedSeo.orcidId || mergedSeo.orcidId === '0000-0002-1825-0097') {
+          mergedSeo.orcidId = '0000-0001-5752-5797';
+        }
 
         // Migrate publications: sync with authentic Google Scholar publications
         const hasGoogleScholarData =
